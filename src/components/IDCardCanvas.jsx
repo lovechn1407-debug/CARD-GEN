@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-// Exact Canvas Dimensions matching original background PNG aspect ratio (608px x 1000px)
 export const CARD_WIDTH = 608;
 export const CARD_HEIGHT = 1000;
 
@@ -23,21 +22,20 @@ export default function IDCardCanvas({
   const [fadeOverlayImage, setFadeOverlayImage] = useState(null);
   const [photoImage, setPhotoImage] = useState(null);
 
-  // 1. Load exact User Background PNG
+  // 1. Load Background PNG
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = '/card_bg.png';
     img.onload = () => setBgImage(img);
     img.onerror = () => {
-      // Fallback relative path
       const img2 = new Image();
       img2.src = 'card_bg.png';
       img2.onload = () => setBgImage(img2);
     };
   }, []);
 
-  // 2. Load exact User Black Fade Overlay PNG
+  // 2. Load Black Fade Overlay PNG
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -65,7 +63,7 @@ export default function IDCardCanvas({
     };
   }, [member?.photoUrl]);
 
-  // Render 3-Layer Canvas (Background PNG -> Member Photo -> Black Fade PNG -> Name & Designation ONLY)
+  // Render 3-Layer Canvas with Precise Fade Height Masking
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -74,7 +72,7 @@ export default function IDCardCanvas({
 
     ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-    // LAYER 1: Exact User Background Image (Header + Navy Gradient + Watermark)
+    // LAYER 1: Background Image (Header + Navy Gradient + Watermark)
     if (bgImage) {
       ctx.drawImage(bgImage, 0, 0, CARD_WIDTH, CARD_HEIGHT);
     } else {
@@ -82,11 +80,11 @@ export default function IDCardCanvas({
       ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
     }
 
-    // LAYER 2: Member Photo (Positioned & Scaled)
+    // LAYER 2: Member Photo
     if (photoImage) {
       ctx.save();
       const centerX = CARD_WIDTH / 2 + transform.x;
-      const centerY = CARD_HEIGHT * 0.42 + transform.y;
+      const centerY = CARD_HEIGHT * 0.40 + transform.y; // Centered nicely in upper-middle area
 
       ctx.translate(centerX, centerY);
       ctx.scale(transform.scale, transform.scale);
@@ -107,36 +105,51 @@ export default function IDCardCanvas({
       ctx.restore();
     }
 
-    // LAYER 3: Exact User Black Fade Overlay
+    // LAYER 3: Black Fade Overlay (Scoping fade to start at lower chest y = 460px so face remains 100% bright!)
+    ctx.save();
+    ctx.globalAlpha = overlayOpacity;
+
     if (fadeOverlayImage) {
-      ctx.save();
-      ctx.globalAlpha = overlayOpacity;
-      ctx.drawImage(fadeOverlayImage, 0, 0, CARD_WIDTH, CARD_HEIGHT);
-      ctx.restore();
+      // Draw fade overlay starting at lower chest area (y = 460) down to bottom
+      const fadeStartY = CARD_HEIGHT * 0.46;
+      const fadeHeight = CARD_HEIGHT - fadeStartY;
+      ctx.drawImage(fadeOverlayImage, 0, fadeStartY, CARD_WIDTH, fadeHeight);
+    } else {
+      // Smooth gradient fallback starting at lower chest
+      const fadeGrad = ctx.createLinearGradient(0, CARD_HEIGHT * 0.46, 0, CARD_HEIGHT * 0.68);
+      fadeGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      fadeGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.6)');
+      fadeGrad.addColorStop(1, 'rgba(0, 0, 0, 1.0)');
+
+      ctx.fillStyle = fadeGrad;
+      ctx.fillRect(0, CARD_HEIGHT * 0.46, CARD_WIDTH, CARD_HEIGHT * 0.22);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, CARD_HEIGHT * 0.68, CARD_WIDTH, CARD_HEIGHT * 0.32);
     }
+    ctx.restore();
 
     // LAYER 4: Typography ONLY (Exact Name in Bebas Neue & Designation in Poppins Italics)
     ctx.save();
     ctx.textAlign = 'center';
 
-    // 4A. NAME in BEBAS NEUE BOLD (Exact reference style)
-    const nameText = (member?.name || 'LOVE CHAUHAN').toUpperCase();
+    // 4A. NAME in BEBAS NEUE BOLD
+    const nameText = (member?.name || 'MEMBER NAME').toUpperCase();
     ctx.font = 'bold 72px "Bebas Neue", "Arial Black", sans-serif';
     ctx.fillStyle = '#FFFFFF';
     ctx.letterSpacing = '1px';
-    ctx.fillText(nameText, CARD_WIDTH / 2, CARD_HEIGHT * 0.72);
+    ctx.fillText(nameText, CARD_WIDTH / 2, CARD_HEIGHT * 0.74);
 
-    // 4B. DESIGNATION in POPPINS ITALICS (Exact reference style inside quotes)
-    const rawDesig = member?.designation || 'Creative Designing';
+    // 4B. DESIGNATION in POPPINS ITALICS
+    const rawDesig = member?.designation || 'E-Cell Team';
     const desigText = `“ ${rawDesig} ”`;
     ctx.font = 'italic 32px "Poppins", sans-serif';
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(desigText, CARD_WIDTH / 2, CARD_HEIGHT * 0.81);
+    ctx.fillText(desigText, CARD_WIDTH / 2, CARD_HEIGHT * 0.83);
 
     ctx.restore();
   }, [bgImage, fadeOverlayImage, photoImage, member, transform, overlayOpacity]);
 
-  // Pointer event handlers for drag positioning
+  // Pointer drag handlers
   const handleMouseDown = (e) => {
     if (!interactive) return;
     setIsDragging(true);

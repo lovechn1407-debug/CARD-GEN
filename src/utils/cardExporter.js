@@ -13,9 +13,7 @@ function loadImage(src) {
 }
 
 /**
- * Renders member card using exact user PNG overlays
- * @param {Object} member 
- * @returns {Promise<HTMLCanvasElement>}
+ * Renders member card using exact user PNG overlays and lower chest fade height
  */
 export async function renderMemberCardCanvas(member) {
   const canvas = document.createElement('canvas');
@@ -23,7 +21,6 @@ export async function renderMemberCardCanvas(member) {
   canvas.height = CARD_HEIGHT;
   const ctx = canvas.getContext('2d');
 
-  // Load User Overlays
   let bgImg = null;
   let fadeImg = null;
   try {
@@ -38,7 +35,6 @@ export async function renderMemberCardCanvas(member) {
     try { fadeImg = await loadImage('card_fade.png'); } catch (err) {}
   }
 
-  // Load Member Photo
   let photoImg = null;
   if (member.photoUrl) {
     try {
@@ -65,7 +61,7 @@ export async function renderMemberCardCanvas(member) {
   if (photoImg) {
     ctx.save();
     const centerX = CARD_WIDTH / 2 + transform.x;
-    const centerY = CARD_HEIGHT * 0.42 + transform.y;
+    const centerY = CARD_HEIGHT * 0.40 + transform.y;
 
     ctx.translate(centerX, centerY);
     ctx.scale(transform.scale, transform.scale);
@@ -79,12 +75,28 @@ export async function renderMemberCardCanvas(member) {
     ctx.restore();
   }
 
-  // LAYER 3: Black Fade Overlay
+  // LAYER 3: Black Fade Overlay (Scoped to lower chest starting at y = 460px)
   if (fadeImg) {
-    ctx.drawImage(fadeImg, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+    ctx.save();
+    const fadeStartY = CARD_HEIGHT * 0.46;
+    const fadeHeight = CARD_HEIGHT - fadeStartY;
+    ctx.drawImage(fadeImg, 0, fadeStartY, CARD_WIDTH, fadeHeight);
+    ctx.restore();
+  } else {
+    ctx.save();
+    const fadeGrad = ctx.createLinearGradient(0, CARD_HEIGHT * 0.46, 0, CARD_HEIGHT * 0.68);
+    fadeGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    fadeGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.6)');
+    fadeGrad.addColorStop(1, 'rgba(0, 0, 0, 1.0)');
+
+    ctx.fillStyle = fadeGrad;
+    ctx.fillRect(0, CARD_HEIGHT * 0.46, CARD_WIDTH, CARD_HEIGHT * 0.22);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, CARD_HEIGHT * 0.68, CARD_WIDTH, CARD_HEIGHT * 0.32);
+    ctx.restore();
   }
 
-  // LAYER 4: Typography ONLY (Bebas Neue Name + Poppins Italics Designation)
+  // LAYER 4: Typography ONLY
   ctx.save();
   ctx.textAlign = 'center';
 
@@ -93,21 +105,18 @@ export async function renderMemberCardCanvas(member) {
   ctx.font = 'bold 72px "Bebas Neue", "Arial Black", sans-serif';
   ctx.fillStyle = '#FFFFFF';
   ctx.letterSpacing = '1px';
-  ctx.fillText(nameText, CARD_WIDTH / 2, CARD_HEIGHT * 0.72);
+  ctx.fillText(nameText, CARD_WIDTH / 2, CARD_HEIGHT * 0.74);
 
-  // Designation in Poppins Italics inside quotes
-  const desigText = `“ ${member.designation || 'Creative Designing'} ”`;
+  // Designation in Poppins Italics
+  const desigText = `“ ${member.designation || 'E-Cell Team'} ”`;
   ctx.font = 'italic 32px "Poppins", sans-serif';
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillText(desigText, CARD_WIDTH / 2, CARD_HEIGHT * 0.81);
+  ctx.fillText(desigText, CARD_WIDTH / 2, CARD_HEIGHT * 0.83);
 
   ctx.restore();
   return canvas;
 }
 
-/**
- * Export selected members as a multi-page PDF where each page matches exact ID Card dimensions (2.125 in x 3.375 in)
- */
 export async function exportMembersToPdf(selectedMembers, onProgress) {
   const pdf = new jsPDF({
     orientation: 'portrait',
@@ -129,9 +138,6 @@ export async function exportMembersToPdf(selectedMembers, onProgress) {
   pdf.save(`ECELL_ID_Cards_Print_${Date.now()}.pdf`);
 }
 
-/**
- * Export selected members as a ZIP file containing high-resolution PNG images
- */
 export async function exportMembersToZip(selectedMembers, onProgress) {
   const zip = new JSZip();
 
