@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import FlippableIDCard from './FlippableIDCard';
+import TiltCardWrapper from './TiltCardWrapper';
 import { subscribeMembers, getMemberById } from '../utils/storage';
 import { ensureAnonymousAuth } from '../utils/firebase';
 import { ShieldCheck, ShieldAlert, CheckCircle, Search, Calendar, Phone, Award, User, Loader } from 'lucide-react';
@@ -122,7 +123,9 @@ export default function PublicVerifyPortal() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px', alignItems: 'start' }}>
               <div style={{ width: '100%', maxWidth: '270px', margin: '0 auto' }}>
-                <FlippableIDCard member={member} interactive={false} overlayOpacity={1.0} showFlipButton={true} />
+                <TiltCardWrapper>
+                  <FlippableIDCard member={member} interactive={false} overlayOpacity={1.0} showFlipButton={true} />
+                </TiltCardWrapper>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
