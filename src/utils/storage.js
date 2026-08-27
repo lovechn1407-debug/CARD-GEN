@@ -3,8 +3,39 @@
 const MEMBERS_KEY = 'ecell_id_members_v1';
 const BATCHES_KEY = 'ecell_id_batches_v1';
 const BATCH_EDITS_KEY = 'ecell_id_batch_edits_v1';
+const TEMPLATE_CONFIG_KEY = 'ecell_id_template_config_v1';
 
-// Sample initial member data with the user's sample
+export const DEFAULT_TEMPLATE_CONFIG = {
+  nameY: 0.74,               // Name vertical position (0 to 1 ratio)
+  nameFontSize: 72,          // Name font size in px
+  nameLetterSpacing: 1,      // Name letter spacing in px
+  nameColor: '#FFFFFF',      // Name text color
+  desigY: 0.83,              // Designation vertical position (0 to 1 ratio)
+  desigFontSize: 32,         // Designation font size in px
+  desigLetterSpacing: 0,     // Designation letter spacing in px
+  desigColor: '#FFFFFF',     // Designation text color
+  desigQuotes: true,         // Include " " quotes around designation
+  fadeStartY: 0.46,          // Black overlay starting height (0 to 1 ratio)
+  fadeOpacity: 1.0,          // Overlay opacity
+  showRefGuide: false,       // Reference ID card overlay guide toggle
+  refGuideOpacity: 0.4       // Reference guide opacity
+};
+
+export function getTemplateConfig() {
+  const data = localStorage.getItem(TEMPLATE_CONFIG_KEY);
+  if (!data) return DEFAULT_TEMPLATE_CONFIG;
+  try {
+    return { ...DEFAULT_TEMPLATE_CONFIG, ...JSON.parse(data) };
+  } catch (e) {
+    return DEFAULT_TEMPLATE_CONFIG;
+  }
+}
+
+export function saveTemplateConfig(config) {
+  localStorage.setItem(TEMPLATE_CONFIG_KEY, JSON.stringify(config));
+}
+
+// Sample initial member data
 const DEFAULT_MEMBERS = [
   {
     id: 'ECELL2026-001',
@@ -14,14 +45,9 @@ const DEFAULT_MEMBERS = [
     validTill: '2026-08-31',
     phone: '+91 9876543210',
     bloodGroup: 'O+',
-    photoUrl: 'https://i.imgur.com/8Q9Z5b4.png', // Default profile sample
+    photoUrl: 'https://i.imgur.com/8Q9Z5b4.png',
     batchId: 'BATCH-DEFAULT-2026',
-    photoTransform: {
-      x: 0,
-      y: -20,
-      scale: 1.05,
-      rotation: 0
-    },
+    photoTransform: { x: 0, y: -20, scale: 1.05, rotation: 0 },
     createdAt: new Date().toISOString()
   },
   {
@@ -34,12 +60,7 @@ const DEFAULT_MEMBERS = [
     bloodGroup: 'B+',
     photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
     batchId: 'BATCH-DEFAULT-2026',
-    photoTransform: {
-      x: 0,
-      y: 0,
-      scale: 1,
-      rotation: 0
-    },
+    photoTransform: { x: 0, y: -20, scale: 1, rotation: 0 },
     createdAt: new Date().toISOString()
   }
 ];
@@ -111,23 +132,6 @@ export function saveBatches(batches) {
   localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
 }
 
-export function createBatch(batchName, memberIds) {
-  const batches = getBatches();
-  const newBatch = {
-    batchId: `BATCH-${Date.now()}`,
-    name: batchName || `Batch ${new Date().toLocaleDateString()}`,
-    createdAt: new Date().toISOString(),
-    memberCount: memberIds.length,
-    memberIds: memberIds,
-    isPublic: true,
-    publicToken: `token-${Math.random().toString(36).substring(2, 9)}`
-  };
-  batches.unshift(newBatch);
-  saveBatches(batches);
-  return newBatch;
-}
-
-// Track member self-edit requests submitted via Public Batch Link
 export function getBatchEdits() {
   const data = localStorage.getItem(BATCH_EDITS_KEY);
   if (!data) return [];
@@ -139,7 +143,6 @@ export function getBatchEdits() {
 }
 
 export function saveBatchEdit(editPayload) {
-  // editPayload: { batchId, collegeRollNo, memberId, photoUrl, photoTransform, editCount, status: 'PENDING' | 'CONFIRMED', updatedAt }
   const edits = getBatchEdits();
   const existingIndex = edits.findIndex(e => e.collegeRollNo === editPayload.collegeRollNo && e.batchId === editPayload.batchId);
   
@@ -170,7 +173,6 @@ export function approveBatchEdit(batchId, collegeRollNo) {
     editItem.status = 'CONFIRMED';
     localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(edits));
     
-    // Sync change to main members array
     const members = getMembers();
     const memberIndex = members.findIndex(m => m.collegeRollNo === collegeRollNo || m.id === editItem.memberId);
     if (memberIndex !== -1) {

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getTemplateConfig } from '../utils/storage';
 
 export const CARD_WIDTH = 608;
 export const CARD_HEIGHT = 1000;
@@ -7,6 +8,7 @@ export default function IDCardCanvas({
   member,
   interactive = false,
   overlayOpacity = 1.0,
+  templateConfig: customConfig,
   onTransformChange,
   className = ''
 }) {
@@ -17,10 +19,12 @@ export default function IDCardCanvas({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const transform = member?.photoTransform || { x: 0, y: -20, scale: 1, rotation: 0 };
+  const cfg = customConfig || getTemplateConfig();
 
   const [bgImage, setBgImage] = useState(null);
   const [fadeOverlayImage, setFadeOverlayImage] = useState(null);
   const [photoImage, setPhotoImage] = useState(null);
+  const [refGuideImage, setRefGuideImage] = useState(null);
 
   // 1. Load Background PNG
   useEffect(() => {
@@ -63,7 +67,21 @@ export default function IDCardCanvas({
     };
   }, [member?.photoUrl]);
 
-  // Render 3-Layer Canvas with Precise Fade Height Masking
+  // 4. Load Reference Guide Overlay Image
+  useEffect(() => {
+    if (!cfg.showRefGuide) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = '/card_reference.png';
+    img.onload = () => setRefGuideImage(img);
+    img.onerror = () => {
+      const img2 = new Image();
+      img2.src = 'card_reference.png';
+      img2.onload = () => setRefGuideImage(img2);
+    };
+  }, [cfg.showRefGuide]);
+
+  // Render Canvas with Dynamic Template Controls
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -72,7 +90,7 @@ export default function IDCardCanvas({
 
     ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-    // LAYER 1: Background Image (Header + Navy Gradient + Watermark)
+    // LAYER 1: Background Graphic
     if (bgImage) {
       ctx.drawImage(bgImage, 0, 0, CARD_WIDTH, CARD_HEIGHT);
     } else {
@@ -84,7 +102,7 @@ export default function IDCardCanvas({
     if (photoImage) {
       ctx.save();
       const centerX = CARD_WIDTH / 2 + transform.x;
-      const centerY = CARD_HEIGHT * 0.40 + transform.y; // Centered nicely in upper-middle area
+      const centerY = CARD_HEIGHT * 0.40 + transform.y;
 
       ctx.translate(centerX, centerY);
       ctx.scale(transform.scale, transform.scale);
@@ -94,60 +112,66 @@ export default function IDCardCanvas({
       const drawWidth = 430;
       const drawHeight = drawWidth / aspect;
 
-      ctx.drawImage(
-        photoImage,
-        -drawWidth / 2,
-        -drawHeight / 2,
-        drawWidth,
-        drawHeight
-      );
-
+      ctx.drawImage(photoImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
       ctx.restore();
     }
 
-    // LAYER 3: Black Fade Overlay (Scoping fade to start at lower chest y = 460px so face remains 100% bright!)
+    // LAYER 3: Black Fade Overlay (Custom Start Y and Opacity)
     ctx.save();
-    ctx.globalAlpha = overlayOpacity;
+    const effectiveOpacity = overlayOpacity * (cfg.fadeOpacity ?? 1.0);
+    ctx.globalAlpha = effectiveOpacity;
+
+    const fadeStartY = CARD_HEIGHT * (cfg.fadeStartY ?? 0.46);
+    const fadeHeight = CARD_HEIGHT - fadeStartY;
 
     if (fadeOverlayImage) {
-      // Draw fade overlay starting at lower chest area (y = 460) down to bottom
-      const fadeStartY = CARD_HEIGHT * 0.46;
-      const fadeHeight = CARD_HEIGHT - fadeStartY;
       ctx.drawImage(fadeOverlayImage, 0, fadeStartY, CARD_WIDTH, fadeHeight);
     } else {
-      // Smooth gradient fallback starting at lower chest
-      const fadeGrad = ctx.createLinearGradient(0, CARD_HEIGHT * 0.46, 0, CARD_HEIGHT * 0.68);
+      const fadeGrad = ctx.createLinearGradient(0, fadeStartY, 0, fadeStartY + CARD_HEIGHT * 0.22);
       fadeGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
       fadeGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.6)');
       fadeGrad.addColorStop(1, 'rgba(0, 0, 0, 1.0)');
 
       ctx.fillStyle = fadeGrad;
-      ctx.fillRect(0, CARD_HEIGHT * 0.46, CARD_WIDTH, CARD_HEIGHT * 0.22);
+      ctx.fillRect(0, fadeStartY, CARD_WIDTH, CARD_HEIGHT * 0.22);
       ctx.fillStyle = '#000000';
-      ctx.fillRect(0, CARD_HEIGHT * 0.68, CARD_WIDTH, CARD_HEIGHT * 0.32);
+      ctx.fillRect(0, fadeStartY + CARD_HEIGHT * 0.22, CARD_WIDTH, CARD_HEIGHT);
     }
     ctx.restore();
 
-    // LAYER 4: Typography ONLY (Exact Name in Bebas Neue & Designation in Poppins Italics)
+    // LAYER 4: Dynamic Typography (Name & Designation)
     ctx.save();
     ctx.textAlign = 'center';
 
-    // 4A. NAME in BEBAS NEUE BOLD
+    // 4A. MEMBER NAME
     const nameText = (member?.name || 'MEMBER NAME').toUpperCase();
-    ctx.font = 'bold 72px "Bebas Neue", "Arial Black", sans-serif';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.letterSpacing = '1px';
-    ctx.fillText(nameText, CARD_WIDTH / 2, CARD_HEIGHT * 0.74);
+    const nameSize = cfg.nameFontSize || 72;
+    ctx.font = `bold ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
+    ctx.fillStyle = cfg.nameColor || '#FFFFFF';
+    ctx.letterSpacing = `${cfg.nameLetterSpacing ?? 1}px`;
+    const nameYPos = CARD_HEIGHT * (cfg.nameY ?? 0.74);
+    ctx.fillText(nameText, CARD_WIDTH / 2, nameYPos);
 
-    // 4B. DESIGNATION in POPPINS ITALICS
-    const rawDesig = member?.designation || 'E-Cell Team';
-    const desigText = `“ ${rawDesig} ”`;
-    ctx.font = 'italic 32px "Poppins", sans-serif';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(desigText, CARD_WIDTH / 2, CARD_HEIGHT * 0.83);
+    // 4B. DESIGNATION
+    const rawDesig = member?.designation || 'Creative Designing';
+    const desigText = cfg.desigQuotes ? `“ ${rawDesig} ”` : rawDesig;
+    const desigSize = cfg.desigFontSize || 32;
+    ctx.font = `italic ${desigSize}px "Poppins", sans-serif`;
+    ctx.fillStyle = cfg.desigColor || '#FFFFFF';
+    ctx.letterSpacing = `${cfg.desigLetterSpacing ?? 0}px`;
+    const desigYPos = CARD_HEIGHT * (cfg.desigY ?? 0.83);
+    ctx.fillText(desigText, CARD_WIDTH / 2, desigYPos);
 
     ctx.restore();
-  }, [bgImage, fadeOverlayImage, photoImage, member, transform, overlayOpacity]);
+
+    // LAYER 5: Reference Guide Overlay (If enabled for alignment preview)
+    if (cfg.showRefGuide && refGuideImage) {
+      ctx.save();
+      ctx.globalAlpha = cfg.refGuideOpacity ?? 0.4;
+      ctx.drawImage(refGuideImage, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+      ctx.restore();
+    }
+  }, [bgImage, fadeOverlayImage, photoImage, refGuideImage, member, transform, overlayOpacity, cfg]);
 
   // Pointer drag handlers
   const handleMouseDown = (e) => {

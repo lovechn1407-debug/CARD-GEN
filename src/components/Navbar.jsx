@@ -1,9 +1,10 @@
 import React from 'react';
-import { Users, Clock, Printer, ShieldCheck, UserCheck, Plus, FileSpreadsheet } from 'lucide-react';
+import { Users, Clock, Printer, ShieldCheck, UserCheck, Plus, FileSpreadsheet, Sliders } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, onOpenBulkModal }) {
   const tabs = [
     { id: 'members', label: 'All Members', icon: Users },
+    { id: 'template-studio', label: 'Card Design Layout', icon: Sliders },
     { id: 'batches', label: 'Batch Edits & Links', icon: Clock },
     { id: 'export', label: 'Print & Export', icon: Printer },
     { id: 'verify', label: 'Public Verify Portal', icon: ShieldCheck },
