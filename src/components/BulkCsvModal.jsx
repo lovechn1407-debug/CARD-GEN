@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse';
 import { uploadToImgBB } from '../utils/imgbb';
-import { X, FileSpreadsheet, Upload, Check, Sparkles } from 'lucide-react';
+import { X, FileSpreadsheet, Upload, Check, Sparkles, Download } from 'lucide-react';
 
 const inp = { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', color: '#0f172a', background: '#fff', outline: 'none', boxSizing: 'border-box' };
 const lbl = { display: 'block', fontSize: '11px', fontWeight: 700, color: '#334155', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.4px' };
@@ -15,6 +15,23 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
   const [progressMsg, setProgressMsg] = useState('');
   const [mappings, setMappings] = useState({ collegeRollNo: '', name: '', designation: '', validTill: '', phone: '', bloodGroup: '', photoUrl: '' });
   const [imageFiles, setImageFiles] = useState([]);
+
+  const handleDownloadSampleCsv = () => {
+    const csvContent = "CollegeRollNo,Name,Designation,ValidTill,Phone,BloodGroup,PhotoUrl\n" +
+      "2100290130085,LOVE CHAUHAN,Creative Designing,2026-08-31,9876543210,O+,https://i.imgur.com/8Q9Z5b4.png\n" +
+      "2100290130086,AARAV SHARMA,Technical Lead,2026-08-31,9876543211,A+,https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80\n" +
+      "2100290130087,ANANYA VERMA,Event Manager,2026-08-31,9876543212,B+,";
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'ecell_members_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const handleCsvChange = (e) => {
     const file = e.target.files?.[0];
@@ -88,6 +105,22 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
 
         {/* Body */}
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+          
+          {/* Template Download Banner */}
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#14532d', margin: 0 }}>Need a formatted CSV template?</h4>
+              <p style={{ fontSize: '11px', color: '#15803d', margin: '2px 0 0' }}>Download pre-formatted sample CSV with columns (Roll No, Name, Role, etc.).</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadSampleCsv}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 6px rgba(22,163,74,0.25)', whiteSpace: 'nowrap' }}
+            >
+              <Download style={{ width: 14, height: 14 }} /> Download CSV Template
+            </button>
+          </div>
+
           {/* Step 1 */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div>
