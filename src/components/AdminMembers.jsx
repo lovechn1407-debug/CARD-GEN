@@ -160,6 +160,7 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
                   onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
                 >
                   <Trash2 style={{ width: 15, height: 15 }} />
+                </button>
               </div>
             </div>
           );
