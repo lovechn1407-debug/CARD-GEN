@@ -238,7 +238,7 @@ export default function PublicEditPortal() {
                 <span style={{ display: 'inline-block', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', marginBottom: '4px' }}>
                   Verified: {authenticatedMember.collegeRollNo}
                 </span>
-                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '28px', fontWeight 700, color: '#0f172a', margin: '0 0 2px', letterSpacing: '1px' }}>{authenticatedMember.name}</h2>
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '28px', fontWeight: 700, color: '#0f172a', margin: '0 0 2px', letterSpacing: '1px' }}>{authenticatedMember.name}</h2>
                 <p style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', margin: 0 }}>{authenticatedMember.designation}</p>
               </div>
               
