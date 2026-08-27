@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import { getMembers, saveBatchEdit } from '../utils/storage';
 import { uploadToImgBB } from '../utils/imgbb';
-import { ShieldCheck, Search, Eye, EyeOff, ZoomIn, ZoomOut, Move, RotateCw, Upload, CheckCircle2, Lock, ArrowRight, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Search, Eye, EyeOff, ZoomIn, ZoomOut, Move, RotateCw, Upload, CheckCircle2, Lock, ArrowRight, RefreshCw, Image, X } from 'lucide-react';
 
 const sliderStyle = { width: '100%', height: '5px', accentColor: '#1d4ed8', cursor: 'pointer' };
 const sectionBox = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' };
@@ -18,6 +18,7 @@ export default function PublicEditPortal() {
   const [seeThrough, setSeeThrough] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -34,9 +35,20 @@ export default function PublicEditPortal() {
       const matchBatch = !batchId || m.batchId === batchId;
       return matchRoll && matchBatch;
     });
+
     if (found) {
       setAuthenticatedMember(found);
-      setPhotoUrl(found.photoUrl || '');
+      const rawUrl = (found.photoUrl || '').trim();
+      const isMissing = !rawUrl || rawUrl.includes('unsplash');
+
+      if (isMissing) {
+        setPhotoUrl(''); // No default photo on card preview!
+        setShowUploadModal(true); // Popup automatically opens if photo URL is empty
+      } else {
+        setPhotoUrl(rawUrl);
+        setShowUploadModal(false);
+      }
+
       setPhotoTransform(found.photoTransform || { x: 0, y: -20, scale: 1, rotation: 0 });
     } else {
       setAuthError(`No member found for Roll No "${collegeRollNo}" in this batch.`);
@@ -52,14 +64,31 @@ export default function PublicEditPortal() {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
-    try { const url = await uploadToImgBB(file); setPhotoUrl(url); }
-    catch (err) { alert('Failed to upload image. Please try again.'); }
-    finally { setIsUploading(false); }
+    try {
+      const url = await uploadToImgBB(file);
+      setPhotoUrl(url);
+      setShowUploadModal(false); // Closes popup modal automatically on upload success
+    } catch (err) {
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSubmitEdits = () => {
     if (!authenticatedMember) return;
-    saveBatchEdit({ batchId: authenticatedMember.batchId || batchId || 'DEFAULT', collegeRollNo: authenticatedMember.collegeRollNo, memberId: authenticatedMember.id, photoUrl, photoTransform });
+    if (!photoUrl) {
+      alert('Please upload your photo before submitting!');
+      setShowUploadModal(true);
+      return;
+    }
+    saveBatchEdit({
+      batchId: authenticatedMember.batchId || batchId || 'DEFAULT',
+      collegeRollNo: authenticatedMember.collegeRollNo,
+      memberId: authenticatedMember.id,
+      photoUrl,
+      photoTransform
+    });
     setIsSubmitted(true);
   };
 
@@ -146,11 +175,19 @@ export default function PublicEditPortal() {
                 <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '28px', fontWeight: 700, color: '#0f172a', margin: '0 0 2px', letterSpacing: '1px' }}>{authenticatedMember.name}</h2>
                 <p style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', margin: 0 }}>{authenticatedMember.designation}</p>
               </div>
-              <button onClick={handleToggleSeeThrough}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: seeThrough ? '#d97706' : '#fff', color: seeThrough ? '#fff' : '#334155', border: seeThrough ? 'none' : '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                {seeThrough ? <EyeOff style={{ width: 14, height: 14 }} /> : <Eye style={{ width: 14, height: 14 }} />}
-                {seeThrough ? 'Overlay Transparent' : 'See Through Overlay'}
-              </button>
+              
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={handleToggleSeeThrough}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: seeThrough ? '#d97706' : '#fff', color: seeThrough ? '#fff' : '#334155', border: seeThrough ? 'none' : '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                  {seeThrough ? <EyeOff style={{ width: 14, height: 14 }} /> : <Eye style={{ width: 14, height: 14 }} />}
+                  {seeThrough ? 'Overlay Transparent' : 'See Through Overlay'}
+                </button>
+
+                <button onClick={() => setShowUploadModal(true)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                  <Upload style={{ width: 14, height: 14 }} /> Change Photo
+                </button>
+              </div>
             </div>
 
             {/* 2-col layout */}
@@ -213,17 +250,14 @@ export default function PublicEditPortal() {
                       onChange={(e) => setPhotoTransform((p) => ({ ...p, rotation: parseInt(e.target.value) }))} style={sliderStyle} />
                   </div>
 
-                  {/* Upload Photo */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#334155', marginBottom: '5px', textTransform: 'uppercase' }}>
-                      Upload New Photo (Auto ImgBB Host)
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', border: '2px dashed #cbd5e1', borderRadius: '10px', cursor: 'pointer', background: '#f8fafc' }}>
-                      <Upload style={{ width: 15, height: 15, color: '#64748b' }} />
-                      <span style={{ fontSize: '12px', color: '#475569' }}>{isUploading ? 'Uploading Image...' : 'Select File'}</span>
-                      <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} style={{ display: 'none' }} />
-                    </label>
-                  </div>
+                  {/* Upload Button */}
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: '#eff6ff', border: '1px dashed #3b82f6', borderRadius: '10px', color: '#1d4ed8', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    <Upload style={{ width: 16, height: 16 }} />
+                    {photoUrl ? 'Change Photo' : 'Upload Card Photo'}
+                  </button>
                 </div>
 
                 {/* Footer */}
@@ -238,6 +272,51 @@ export default function PublicEditPortal() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* AUTOMATIC OR MANUAL PHOTO UPLOAD POPUP MODAL */}
+        {showUploadModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(4px)' }}>
+            <div style={{ background: '#fff', borderRadius: '20px', padding: '32px 28px', maxWidth: '420px', width: '100%', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', textAlign: 'center', boxSizing: 'border-box' }}>
+              <div style={{ width: 60, height: 60, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 4px 12px rgba(29,78,216,0.15)' }}>
+                <Upload style={{ width: 28, height: 28, color: '#1d4ed8' }} />
+              </div>
+              
+              <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px', letterSpacing: '-0.3px' }}>
+                {!photoUrl ? 'Upload Your Card Photo' : 'Change Card Photo'}
+              </h3>
+              
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 24px', lineHeight: 1.5 }}>
+                {!photoUrl
+                  ? 'No photo URL exists for your card. Please select and upload your photo to customize your E-Cell ID card.'
+                  : 'Choose a new photo file to replace your existing ID card photo.'
+                }
+              </p>
+
+              <label style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                padding: '28px 16px', border: '2px dashed #3b82f6', borderRadius: '14px', cursor: isUploading ? 'not-allowed' : 'pointer',
+                background: '#f0f9ff', transition: 'all 0.15s ease'
+              }}>
+                <Image style={{ width: 32, height: 32, color: '#1d4ed8' }} />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e40af' }}>
+                  {isUploading ? 'Uploading Image to Cloud...' : 'Click to Browse & Upload Photo'}
+                </span>
+                <span style={{ fontSize: '11px', color: '#60a5fa' }}>Supports PNG, JPG, WEBP formats</span>
+                <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} style={{ display: 'none' }} />
+              </label>
+
+              {photoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setShowUploadModal(false)}
+                  style={{ marginTop: '16px', width: '100%', padding: '11px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}
+                >
+                  Cancel / Keep Current Photo
+                </button>
+              )}
             </div>
           </div>
         )}

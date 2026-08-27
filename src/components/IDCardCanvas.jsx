@@ -54,16 +54,16 @@ export default function IDCardCanvas({
 
   // 3. Load Member Photo
   useEffect(() => {
-    if (!member?.photoUrl) return;
+    if (!member?.photoUrl) {
+      setPhotoImage(null);
+      return;
+    }
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = member.photoUrl;
     img.onload = () => setPhotoImage(img);
     img.onerror = () => {
-      const fallback = new Image();
-      fallback.crossOrigin = 'anonymous';
-      fallback.src = 'https://i.imgur.com/8Q9Z5b4.png';
-      fallback.onload = () => setPhotoImage(fallback);
+      setPhotoImage(null);
     };
   }, [member?.photoUrl]);
 
