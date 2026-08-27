@@ -26,6 +26,24 @@ export default function IDCardCanvas({
   const [photoImage, setPhotoImage] = useState(null);
   const [refGuideImage, setRefGuideImage] = useState(null);
 
+  // Lock mobile page scrolling on touch drag when interactive
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !interactive) return;
+
+    const preventTouchScroll = (e) => {
+      if (e.cancelable) e.preventDefault();
+    };
+
+    el.addEventListener('touchmove', preventTouchScroll, { passive: false });
+    el.addEventListener('touchstart', preventTouchScroll, { passive: false });
+
+    return () => {
+      el.removeEventListener('touchmove', preventTouchScroll);
+      el.removeEventListener('touchstart', preventTouchScroll);
+    };
+  }, [interactive]);
+
   // 1. Load Background PNG
   useEffect(() => {
     const img = new Image();
@@ -263,6 +281,7 @@ export default function IDCardCanvas({
         borderRadius: '12px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
         userSelect: 'none',
+        touchAction: interactive ? 'none' : 'auto',
         cursor: interactive ? (isDragging ? 'grabbing' : 'grab') : 'default',
         lineHeight: 0
       }}
@@ -272,11 +291,13 @@ export default function IDCardCanvas({
       onMouseLeave={handleMouseUp}
       onTouchStart={(e) => {
         if (!interactive || e.touches.length !== 1) return;
+        if (e.cancelable) e.preventDefault();
         setIsDragging(true);
         setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
       }}
       onTouchMove={(e) => {
         if (!interactive || !isDragging || e.touches.length !== 1) return;
+        if (e.cancelable) e.preventDefault();
         const dx = e.touches[0].clientX - dragStart.x;
         const dy = e.touches[0].clientY - dragStart.y;
         setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
