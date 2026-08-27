@@ -27,10 +27,7 @@ export default function App() {
 
   useEffect(() => {
     refreshData();
-
-    const handleHashChange = () => {
-      setCurrentRoute(window.location.hash || '#/');
-    };
+    const handleHashChange = () => setCurrentRoute(window.location.hash || '#/');
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
@@ -42,12 +39,9 @@ export default function App() {
 
   const handleImportBatch = (newMembers, newBatch) => {
     const currentM = getMembers();
-    const merged = [...currentM, ...newMembers];
-    saveMembers(merged);
-
+    saveMembers([...currentM, ...newMembers]);
     const currentB = getBatches();
     saveBatches([newBatch, ...currentB]);
-
     refreshData();
   };
 
@@ -61,84 +55,61 @@ export default function App() {
     setMembersState(updated);
   };
 
-  if (currentRoute.startsWith('#/verify')) {
-    return <PublicVerifyPortal />;
-  }
-
-  if (currentRoute.startsWith('#/public-edit')) {
-    return <PublicEditPortal />;
-  }
+  if (currentRoute.startsWith('#/verify')) return <PublicVerifyPortal />;
+  if (currentRoute.startsWith('#/public-edit')) return <PublicEditPortal />;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
-      <div>
-        <Navbar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onOpenAddModal={() => setShowAddModal(true)}
-          onOpenBulkModal={() => setShowBulkModal(true)}
-        />
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenAddModal={() => setShowAddModal(true)}
+        onOpenBulkModal={() => setShowBulkModal(true)}
+      />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeTab === 'members' && (
-            <AdminMembers
-              members={members}
-              batches={batches}
-              onAddMember={handleAddMember}
-              onImportBatch={handleImportBatch}
-              onUpdateMember={handleUpdateMember}
-              onDeleteMember={handleDeleteMember}
-            />
-          )}
+      <main style={{ flex: 1, maxWidth: '1280px', margin: '0 auto', width: '100%', padding: '32px 20px' }}>
+        {activeTab === 'members' && (
+          <AdminMembers
+            members={members}
+            batches={batches}
+            onAddMember={handleAddMember}
+            onImportBatch={handleImportBatch}
+            onUpdateMember={handleUpdateMember}
+            onDeleteMember={handleDeleteMember}
+          />
+        )}
+        {activeTab === 'template-studio' && (
+          <AdminTemplateStudio members={members} onConfigSaved={() => refreshData()} />
+        )}
+        {activeTab === 'batches' && (
+          <AdminBatchEdits batches={batches} members={members} onBatchUpdated={refreshData} />
+        )}
+        {activeTab === 'export' && (
+          <AdminExport members={members} batches={batches} />
+        )}
+        {activeTab === 'verify' && <PublicVerifyPortal />}
+        {activeTab === 'edit-portal' && <PublicEditPortal />}
+      </main>
 
-          {activeTab === 'template-studio' && (
-            <AdminTemplateStudio
-              members={members}
-              onConfigSaved={() => refreshData()}
-            />
-          )}
-
-          {activeTab === 'batches' && (
-            <AdminBatchEdits
-              batches={batches}
-              members={members}
-              onBatchUpdated={refreshData}
-            />
-          )}
-
-          {activeTab === 'export' && (
-            <AdminExport members={members} batches={batches} />
-          )}
-
-          {activeTab === 'verify' && <PublicVerifyPortal />}
-
-          {activeTab === 'edit-portal' && <PublicEditPortal />}
-        </main>
-      </div>
-
-      <footer className="bg-white border-t border-slate-200 py-6 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+      <footer style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '20px', marginTop: 'auto' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '12px', color: '#64748b' }}>
           <div>
-            <span className="font-bold text-slate-700">E-CELL CARD-GEN</span> • Entrepreneurship Cell, I.T.S Engineering College
+            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Entrepreneurship Cell, I.T.S Engineering College
           </div>
           <div>
-            Design Layout: <span className="font-bebas text-slate-700 text-sm">BEBAS NEUE</span> & <span className="font-poppins italic text-slate-700">Poppins</span>
+            Design Layout:{' '}
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", color: '#334155', fontSize: '14px' }}>BEBAS NEUE</span>
+            {' & '}
+            <span style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', color: '#334155' }}>Poppins</span>
           </div>
         </div>
       </footer>
 
       {showAddModal && (
-        <AddMemberModal
-          onClose={() => setShowAddModal(false)}
-          onAddMember={handleAddMember}
-        />
+        <AddMemberModal onClose={() => setShowAddModal(false)} onAddMember={handleAddMember} />
       )}
-
       {showBulkModal && (
-        <BulkCsvModal
-          onClose={() => setShowBulkModal(false)}
-          onImportSuccess={handleImportBatch}
-        />
+        <BulkCsvModal onClose={() => setShowBulkModal(false)} onImportSuccess={handleImportBatch} />
       )}
     </div>
   );

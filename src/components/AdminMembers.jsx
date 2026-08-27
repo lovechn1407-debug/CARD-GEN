@@ -5,17 +5,9 @@ import BulkCsvModal from './BulkCsvModal';
 import CardEditorModal from './CardEditorModal';
 import { UserPlus, FileSpreadsheet, Search, SlidersHorizontal, Edit3, Trash2, CreditCard } from 'lucide-react';
 
-export default function AdminMembers({
-  members,
-  batches,
-  onAddMember,
-  onImportBatch,
-  onUpdateMember,
-  onDeleteMember
-}) {
+export default function AdminMembers({ members, batches, onAddMember, onImportBatch, onUpdateMember, onDeleteMember }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBatchFilter, setSelectedBatchFilter] = useState('ALL');
-
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
@@ -25,39 +17,39 @@ export default function AdminMembers({
       m.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.collegeRollNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.designation?.toLowerCase().includes(searchTerm.toLowerCase());
-
     const matchesBatch = selectedBatchFilter === 'ALL' || m.batchId === selectedBatchFilter;
-
     return matchesSearch && matchesBatch;
   });
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
       {/* Top Filter & Action Bar */}
-      <div className="hero-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Search & Batch Dropdown */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-          {/* Fixed Search Input Container */}
-          <div className="relative w-full sm:w-72">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Search className="w-4 h-4" />
+      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        
+        {/* Search + Batch Filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Search box */}
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8' }}>
+              <Search style={{ width: 15, height: 15 }} />
             </div>
             <input
               type="text"
               placeholder="Search name, roll no, role..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="hero-input"
-              style={{ paddingLeft: '2.25rem' }}
+              style={{ paddingLeft: '32px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', width: '240px', background: '#fff', color: '#0f172a' }}
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <SlidersHorizontal className="w-4 h-4 text-slate-500 shrink-0" />
+          {/* Batch Filter Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <SlidersHorizontal style={{ width: 15, height: 15, color: '#64748b', flexShrink: 0 }} />
             <select
               value={selectedBatchFilter}
               onChange={(e) => setSelectedBatchFilter(e.target.value)}
-              className="hero-input py-2 text-xs"
+              style={{ padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', background: '#fff', color: '#0f172a', outline: 'none' }}
             >
               <option value="ALL">All Upload Batches ({members.length})</option>
               {batches.map((b) => (
@@ -69,79 +61,92 @@ export default function AdminMembers({
           </div>
         </div>
 
-        {/* Top Buttons */}
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <button onClick={() => setShowAddModal(true)} className="hero-btn hero-btn-primary text-xs">
-            <UserPlus className="w-4 h-4" /> Add New Member
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            <UserPlus style={{ width: 15, height: 15 }} /> Add New Member
           </button>
-          <button onClick={() => setShowBulkModal(true)} className="hero-btn hero-btn-secondary text-xs">
-            <FileSpreadsheet className="w-4 h-4 text-green-600" /> Bulk CSV Entry
+          <button
+            onClick={() => setShowBulkModal(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#fff', color: '#374151', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            <FileSpreadsheet style={{ width: 15, height: 15, color: '#16a34a' }} /> Bulk CSV Entry
           </button>
         </div>
       </div>
 
       {/* Member Cards Grid */}
       {filteredMembers.length === 0 ? (
-        <div className="hero-card p-12 text-center space-y-3">
-          <CreditCard className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-base font-bold text-slate-700">No Member Cards Found</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Click "Add New Member" or "Bulk CSV Entry" to start generating custom E-Cell ID cards.
-          </p>
+        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '60px 20px', textAlign: 'center' }}>
+          <CreditCard style={{ width: 48, height: 48, color: '#cbd5e1', margin: '0 auto 12px' }} />
+          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>No Member Cards Found</h3>
+          <p style={{ fontSize: '12px', color: '#64748b' }}>Click "Add New Member" or "Bulk CSV Entry" to start generating E-Cell ID cards.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
           {filteredMembers.map((member) => (
-            <div key={member.id} className="hero-card hero-card-hover p-4 flex flex-col justify-between space-y-4">
-              {/* Card Canvas Thumbnail */}
-              <div className="relative group bg-slate-900 rounded-xl overflow-hidden shadow-md flex items-center justify-center p-2 border border-slate-200">
-                <div className="w-full max-w-[240px]">
-                  <IDCardCanvas member={member} interactive={false} overlayOpacity={1.0} />
-                </div>
-
-                {/* Hover Quick Edit Overlay */}
-                <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-2xs">
+            <div
+              key={member.id}
+              style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'box-shadow 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)'}
+              onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
+            >
+              {/* Card Canvas */}
+              <div style={{ position: 'relative', background: '#0f172a', borderRadius: '10px', overflow: 'hidden', border: '1px solid #1e293b' }}>
+                <IDCardCanvas member={member} interactive={false} overlayOpacity={1.0} />
+                {/* Hover Overlay */}
+                <div
+                  className="card-hover-overlay"
+                  style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                  onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                >
                   <button
                     onClick={() => setEditingMember(member)}
-                    className="hero-btn hero-btn-primary text-xs py-2 px-4 shadow-lg"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                   >
-                    <Edit3 className="w-4 h-4" /> Modify Card
+                    <Edit3 style={{ width: 14, height: 14 }} /> Modify Card
                   </button>
                 </div>
               </div>
 
-              {/* Member Card Footer Info */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="hero-badge hero-badge-blue text-[10px] font-mono">
+              {/* Member Info */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', fontFamily: 'monospace' }}>
                     ID: {member.collegeRollNo || member.id}
                   </span>
-                  <span className="hero-badge hero-badge-green text-[10px]">Verified</span>
+                  <span style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '2px 8px' }}>
+                    Verified
+                  </span>
                 </div>
-                <h4 className="font-bebas text-xl font-bold tracking-wide text-slate-900 leading-tight pt-1">
+                <h4 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: '4px 0 2px', lineHeight: 1.2 }}>
                   {member.name}
                 </h4>
-                <p className="font-poppins italic text-xs text-slate-600 truncate">{member.designation}</p>
+                <p style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', fontSize: '12px', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {member.designation}
+                </p>
               </div>
 
               {/* Quick Actions */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
                 <button
                   onClick={() => setEditingMember(member)}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
-                  <Edit3 className="w-3.5 h-3.5" /> Edit Photo/Card
+                  <Edit3 style={{ width: 13, height: 13 }} /> Edit Photo/Card
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(`Delete card for ${member.name}?`)) {
-                      onDeleteMember(member.id);
-                    }
-                  }}
-                  className="text-slate-400 hover:text-red-600 p-1 transition"
+                  onClick={() => { if (confirm(`Delete card for ${member.name}?`)) onDeleteMember(member.id); }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#94a3b8' }}
                   title="Delete Member"
+                  onMouseEnter={e => e.currentTarget.style.color = '#dc2626'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 style={{ width: 15, height: 15 }} />
                 </button>
               </div>
             </div>
@@ -150,26 +155,10 @@ export default function AdminMembers({
       )}
 
       {/* Modals */}
-      {showAddModal && (
-        <AddMemberModal
-          onClose={() => setShowAddModal(false)}
-          onAddMember={(newM) => onAddMember(newM)}
-        />
-      )}
-
-      {showBulkModal && (
-        <BulkCsvModal
-          onClose={() => setShowBulkModal(false)}
-          onImportSuccess={(newMembers, newBatch) => onImportBatch(newMembers, newBatch)}
-        />
-      )}
-
+      {showAddModal && <AddMemberModal onClose={() => setShowAddModal(false)} onAddMember={onAddMember} />}
+      {showBulkModal && <BulkCsvModal onClose={() => setShowBulkModal(false)} onImportSuccess={onImportBatch} />}
       {editingMember && (
-        <CardEditorModal
-          member={editingMember}
-          onClose={() => setEditingMember(null)}
-          onSave={(updatedM) => onUpdateMember(updatedM)}
-        />
+        <CardEditorModal member={editingMember} onClose={() => setEditingMember(null)} onSave={onUpdateMember} />
       )}
     </div>
   );

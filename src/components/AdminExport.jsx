@@ -1,120 +1,93 @@
 import React, { useState } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import { exportMembersToPdf, exportMembersToZip } from '../utils/cardExporter';
-import { Printer, Download, FileText, Archive, CheckSquare, Square, Filter, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Printer, FileText, Archive, CheckSquare, Square, Filter, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export default function AdminExport({ members, batches }) {
   const [selectedBatchFilter, setSelectedBatchFilter] = useState('ALL');
   const [selectedIds, setSelectedIds] = useState(members.map((m) => m.id));
-
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState({ current: 0, total: 0, name: '' });
-  const [exportType, setExportType] = useState(null); // 'pdf' | 'zip'
+  const [exportType, setExportType] = useState(null);
 
-  // Filter members list by batch
   const displayMembers = members.filter(
     (m) => selectedBatchFilter === 'ALL' || m.batchId === selectedBatchFilter
   );
 
-  const isAllSelected =
-    displayMembers.length > 0 && displayMembers.every((m) => selectedIds.includes(m.id));
+  const isAllSelected = displayMembers.length > 0 && displayMembers.every((m) => selectedIds.includes(m.id));
 
   const toggleSelectAll = () => {
-    if (isAllSelected) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(displayMembers.map((m) => m.id));
-    }
+    setSelectedIds(isAllSelected ? [] : displayMembers.map((m) => m.id));
   };
 
   const toggleSelectMember = (id) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter((item) => item !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
-    }
+    setSelectedIds(selectedIds.includes(id) ? selectedIds.filter((i) => i !== id) : [...selectedIds, id]);
   };
 
   const selectedMemberList = members.filter((m) => selectedIds.includes(m.id));
 
-  // Trigger PDF Export
   const handleExportPdf = async () => {
     if (!selectedMemberList.length) return;
-    setIsExporting(true);
-    setExportType('PDF');
-    try {
-      await exportMembersToPdf(selectedMemberList, (current, total, name) => {
-        setExportProgress({ current, total, name });
-      });
-    } catch (e) {
-      alert('Failed to generate PDF export.');
-    } finally {
-      setIsExporting(false);
-    }
+    setIsExporting(true); setExportType('PDF');
+    try { await exportMembersToPdf(selectedMemberList, (cur, tot, name) => setExportProgress({ current: cur, total: tot, name })); }
+    catch (e) { alert('Failed to generate PDF.'); }
+    finally { setIsExporting(false); }
   };
 
-  // Trigger ZIP Export
   const handleExportZip = async () => {
     if (!selectedMemberList.length) return;
-    setIsExporting(true);
-    setExportType('ZIP');
-    try {
-      await exportMembersToZip(selectedMemberList, (current, total, name) => {
-        setExportProgress({ current, total, name });
-      });
-    } catch (e) {
-      alert('Failed to generate ZIP export.');
-    } finally {
-      setIsExporting(false);
-    }
+    setIsExporting(true); setExportType('ZIP');
+    try { await exportMembersToZip(selectedMemberList, (cur, tot, name) => setExportProgress({ current: cur, total: tot, name })); }
+    catch (e) { alert('Failed to generate ZIP.'); }
+    finally { setIsExporting(false); }
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
       {/* Export Toolbar */}
-      <div className="hero-card p-6 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        
+        {/* Title Row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
           <div>
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Printer className="w-5 h-5 text-blue-600" /> Print & High-Res Card Export Studio
+            <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Printer style={{ width: 18, height: 18, color: '#1d4ed8' }} /> Print & High-Res Card Export Studio
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Select cards by batch or individual selection. Export as standard 3.375" × 2.125" ID Card PDF or ZIP package.
+            <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+              Select cards by batch or individually. Export as 3.375″ × 2.125″ ID card PDF or ZIP image package.
             </p>
           </div>
-
-          <div className="flex items-center gap-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               onClick={handleExportPdf}
               disabled={!selectedMemberList.length || isExporting}
-              className="hero-btn hero-btn-primary text-xs"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: selectedMemberList.length && !isExporting ? '#1d4ed8' : '#cbd5e1', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: selectedMemberList.length && !isExporting ? 'pointer' : 'not-allowed' }}
             >
-              <FileText className="w-4 h-4" /> Export PDF (3.375″ × 2.125″)
+              <FileText style={{ width: 15, height: 15 }} /> Export PDF
             </button>
             <button
               onClick={handleExportZip}
               disabled={!selectedMemberList.length || isExporting}
-              className="hero-btn hero-btn-secondary text-xs"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#fff', color: '#374151', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: selectedMemberList.length && !isExporting ? 'pointer' : 'not-allowed' }}
             >
-              <Archive className="w-4 h-4 text-purple-600" /> Export PNG Images ZIP
+              <Archive style={{ width: 15, height: 15, color: '#7c3aed' }} /> Export ZIP
             </button>
           </div>
         </div>
 
-        {/* Filter & Selection Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Filter className="w-4 h-4 text-slate-400" />
+        {/* Filter & Selection Row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', paddingTop: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Filter style={{ width: 14, height: 14, color: '#94a3b8' }} />
             <select
               value={selectedBatchFilter}
               onChange={(e) => {
                 setSelectedBatchFilter(e.target.value);
-                const batchMembers = members.filter(
-                  (m) => e.target.value === 'ALL' || m.batchId === e.target.value
-                );
-                setSelectedIds(batchMembers.map((m) => m.id));
+                const bm = members.filter((m) => e.target.value === 'ALL' || m.batchId === e.target.value);
+                setSelectedIds(bm.map((m) => m.id));
               }}
-              className="hero-input text-xs py-1.5"
+              style={{ padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '7px', fontSize: '13px', background: '#fff', color: '#0f172a', outline: 'none' }}
             >
               <option value="ALL">All Batches ({members.length} Cards)</option>
               {batches.map((b) => (
@@ -125,73 +98,71 @@ export default function AdminExport({ members, batches }) {
             </select>
           </div>
 
-          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               onClick={toggleSelectAll}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1.5"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '13px', fontWeight: 600, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer' }}
             >
-              {isAllSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-              {isAllSelected ? 'Deselect All' : 'Select All Filtered'}
+              {isAllSelected ? <CheckSquare style={{ width: 15, height: 15 }} /> : <Square style={{ width: 15, height: 15 }} />}
+              {isAllSelected ? 'Deselect All' : 'Select All'}
             </button>
-            <span className="hero-badge hero-badge-blue text-xs">
-              {selectedMemberList.length} of {displayMembers.length} Selected
+            <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '20px', fontSize: '12px', fontWeight: 700, padding: '2px 10px' }}>
+              {selectedMemberList.length} / {displayMembers.length} Selected
             </span>
           </div>
         </div>
 
-        {/* Progress Bar when Exporting */}
+        {/* Export Progress */}
         {isExporting && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-blue-800">
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" /> Generating High-Res {exportType} for {exportProgress.name}...
+          <div style={{ marginTop: '14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '12px 14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: '#1e40af', marginBottom: '6px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles style={{ width: 13, height: 13 }} /> Generating {exportType} for {exportProgress.name}...
               </span>
-              <span>
-                {exportProgress.current} / {exportProgress.total}
-              </span>
+              <span>{exportProgress.current} / {exportProgress.total}</span>
             </div>
-            <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-blue-600 transition-all duration-300"
-                style={{
-                  width: `${(exportProgress.current / (exportProgress.total || 1)) * 100}%`
-                }}
-              />
+            <div style={{ width: '100%', height: '6px', background: '#bfdbfe', borderRadius: '99px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', background: '#1d4ed8', borderRadius: '99px', width: `${(exportProgress.current / (exportProgress.total || 1)) * 100}%`, transition: 'width 0.3s' }} />
             </div>
           </div>
         )}
       </div>
 
-      {/* Selectable Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* Cards Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
         {displayMembers.map((member) => {
           const isSelected = selectedIds.includes(member.id);
-
           return (
             <div
               key={member.id}
               onClick={() => toggleSelectMember(member.id)}
-              className={`hero-card p-4 cursor-pointer transition-all ${
-                isSelected ? 'ring-2 ring-blue-600 border-blue-600 bg-blue-50/20' : 'opacity-70 hover:opacity-100'
-              }`}
+              style={{
+                background: '#ffffff',
+                border: isSelected ? '2px solid #1d4ed8' : '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '12px',
+                cursor: 'pointer',
+                opacity: isSelected ? 1 : 0.72,
+                boxShadow: isSelected ? '0 0 0 3px rgba(29,78,216,0.15)' : '0 1px 3px rgba(0,0,0,0.05)',
+                transition: 'all 0.15s'
+              }}
+              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.opacity = 1; }}
+              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.opacity = 0.72; }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  {isSelected ? (
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0" />
-                  ) : (
-                    <Square className="w-5 h-5 text-slate-300 shrink-0" />
-                  )}
-                  <span className="font-bebas text-base text-slate-900 tracking-wide">{member.name}</span>
+              {/* Select row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {isSelected
+                    ? <CheckCircle2 style={{ width: 16, height: 16, color: '#1d4ed8' }} />
+                    : <Square style={{ width: 16, height: 16, color: '#cbd5e1' }} />
+                  }
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{member.name}</span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400">{member.collegeRollNo}</span>
+                <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#94a3b8' }}>{member.collegeRollNo}</span>
               </div>
-
               {/* Card Canvas */}
-              <div className="bg-slate-900 rounded-lg p-2 flex items-center justify-center">
-                <div className="w-full max-w-[220px]">
-                  <IDCardCanvas member={member} interactive={false} overlayOpacity={1.0} />
-                </div>
+              <div style={{ background: '#0f172a', borderRadius: '8px', overflow: 'hidden', padding: '4px', display: 'flex', justifyContent: 'center' }}>
+                <IDCardCanvas member={member} interactive={false} overlayOpacity={1.0} />
               </div>
             </div>
           );
