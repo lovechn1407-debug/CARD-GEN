@@ -146,7 +146,7 @@ export default function IDCardCanvas({
     // 4A. MEMBER NAME
     const nameText = (member?.name || 'MEMBER NAME').toUpperCase();
     const nameSize = cfg.nameFontSize || 72;
-    ctx.font = `bold ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
+    ctx.font = `normal ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
     ctx.fillStyle = cfg.nameColor || '#FFFFFF';
     ctx.letterSpacing = `${cfg.nameLetterSpacing ?? 1}px`;
     const nameYPos = CARD_HEIGHT * (cfg.nameY ?? 0.74);
@@ -199,7 +199,16 @@ export default function IDCardCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative inline-block overflow-hidden rounded-xl shadow-lg select-none ${className}`}
+      style={{
+        position: 'relative',
+        display: 'inline-block',
+        overflow: 'hidden',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        userSelect: 'none',
+        cursor: interactive ? (isDragging ? 'grabbing' : 'grab') : 'default',
+        lineHeight: 0
+      }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -214,7 +223,6 @@ export default function IDCardCanvas({
         const dx = e.touches[0].clientX - dragStart.x;
         const dy = e.touches[0].clientY - dragStart.y;
         setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-
         const newTransform = {
           ...transform,
           x: transform.x + dx * 1.5,
@@ -223,14 +231,12 @@ export default function IDCardCanvas({
         if (onTransformChange) onTransformChange(newTransform);
       }}
       onTouchEnd={() => setIsDragging(false)}
-      style={{ cursor: interactive ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
     >
       <canvas
         ref={canvasRef}
         width={CARD_WIDTH}
         height={CARD_HEIGHT}
-        className="w-full h-auto block"
-        style={{ aspectRatio: '608 / 1000' }}
+        style={{ width: '100%', height: 'auto', display: 'block', aspectRatio: '608 / 1000' }}
       />
     </div>
   );

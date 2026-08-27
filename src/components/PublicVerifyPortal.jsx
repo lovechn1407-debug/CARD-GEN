@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import IDCardCanvas from './IDCardCanvas';
-import { getMemberById, getMembers } from '../utils/storage';
+import { getMemberById } from '../utils/storage';
 import { ShieldCheck, ShieldAlert, CheckCircle, Search, Calendar, Phone, Award, User } from 'lucide-react';
 
 export default function PublicVerifyPortal() {
@@ -9,14 +9,12 @@ export default function PublicVerifyPortal() {
   const [searched, setSearched] = useState(false);
 
   useEffect(() => {
-    // Extract ?id=... from hash URL or query params
     const hash = window.location.hash;
     const match = hash.match(/id=([^&]+)/) || window.location.search.match(/id=([^&]+)/);
-    if (match && match[1]) {
+    if (match?.[1]) {
       const queryId = decodeURIComponent(match[1]);
       setMemberId(queryId);
-      const found = getMemberById(queryId);
-      setMember(found);
+      setMember(getMemberById(queryId));
       setSearched(true);
     }
   }, []);
@@ -24,159 +22,127 @@ export default function PublicVerifyPortal() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (!memberId.trim()) return;
-    const found = getMemberById(memberId.trim());
-    setMember(found);
+    setMember(getMemberById(memberId.trim()));
     setSearched(true);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between p-4 sm:p-6">
-      {/* Top Navigation */}
-      <header className="max-w-4xl mx-auto w-full flex items-center justify-between py-4 border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bebas text-white text-xl shadow-md">
-            EC
+    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '0 20px' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '60px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: 38, height: 38, background: '#1d4ed8', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue', sans-serif", color: '#fff', fontSize: '18px' }}>EC</div>
+            <div>
+              <h1 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>E-CELL Official Verification</h1>
+              <p style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', margin: 0 }}>I.T.S Engineering College</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-slate-900 text-base leading-tight">E-CELL Official Verification</h1>
-            <p className="text-xs text-slate-500 font-poppins italic">I.T.S Engineering College</p>
-          </div>
+          <a href="#/" style={{ padding: '7px 14px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#334155', textDecoration: 'none' }}>
+            Admin Portal
+          </a>
         </div>
-        <a href="#/" className="hero-btn hero-btn-secondary text-xs">
-          Admin Portal
-        </a>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-3xl mx-auto w-full my-auto py-8">
+      {/* Main */}
+      <main style={{ flex: 1, maxWidth: '900px', margin: '0 auto', width: '100%', padding: '40px 20px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
         {!searched || !member ? (
-          <div className="hero-card p-8 max-w-md mx-auto space-y-6 shadow-xl text-center">
-            {searched && !member ? (
-              <div className="space-y-3">
-                <div className="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto border border-red-100">
-                  <ShieldAlert className="w-8 h-8" />
+          /* Search Form */
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '40px', maxWidth: '420px', width: '100%', boxShadow: '0 8px 30px rgba(0,0,0,0.08)', textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, background: searched && !member ? '#fef2f2' : '#eff6ff', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: `1px solid ${searched && !member ? '#fecaca' : '#bfdbfe'}` }}>
+              {searched && !member
+                ? <ShieldAlert style={{ width: 28, height: 28, color: '#dc2626' }} />
+                : <ShieldCheck style={{ width: 28, height: 28, color: '#1d4ed8' }} />
+              }
+            </div>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>
+              {searched && !member ? 'Unverified / Invalid Card' : 'Verify E-Cell ID Card'}
+            </h2>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 24px' }}>
+              {searched && !member
+                ? `No member record found for ID "${memberId}".`
+                : 'Enter a Member Roll No to check official status.'
+              }
+            </p>
+            <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8' }}>
+                  <Search style={{ width: 15, height: 15 }} />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">Unverified / Invalid Card</h2>
-                <p className="text-xs text-slate-500">
-                  No official member record matches ID "{memberId}". Please verify the ID number.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100">
-                  <ShieldCheck className="w-8 h-8" />
-                </div>
-                <h2 className="text-xl font-bold text-slate-900">Scan / Verify E-Cell ID Card</h2>
-                <p className="text-xs text-slate-500">
-                  Enter the Member College Roll No or Scan QR Code to check official status.
-                </p>
-              </div>
-            )}
-
-            <form onSubmit={handleSearchSubmit} className="space-y-3">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Enter College Roll No / ID..."
-                  value={memberId}
+                <input type="text" placeholder="Enter College Roll No / ID..." value={memberId}
                   onChange={(e) => setMemberId(e.target.value)}
-                  className="hero-input pl-9"
-                />
+                  style={{ width: '100%', padding: '10px 12px 10px 32px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
               </div>
-              <button type="submit" className="hero-btn hero-btn-primary w-full justify-center text-xs">
+              <button type="submit" style={{ padding: '10px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                 Verify Member Authenticity
               </button>
             </form>
           </div>
         ) : (
-          /* Live Verified Card Details Screen */
-          <div className="hero-card p-6 sm:p-8 space-y-6 shadow-xl border-green-200">
-            {/* Verified Header Banner */}
-            <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-8 h-8 text-green-600 shrink-0" />
+          /* Verified Result Card */
+          <div style={{ background: '#fff', border: '1px solid #bbf7d0', borderRadius: '16px', padding: '28px', width: '100%', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+            {/* Verified Banner */}
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <CheckCircle style={{ width: 28, height: 28, color: '#16a34a', flexShrink: 0 }} />
                 <div>
-                  <div className="text-xs font-bold text-green-800 uppercase tracking-wider">
-                    Official E-Cell Verification Status
-                  </div>
-                  <div className="text-sm font-bold text-green-900">VERIFIED ACTIVE E-CELL MEMBER</div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Official E-Cell Verification Status</div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#14532d' }}>VERIFIED ACTIVE E-CELL MEMBER</div>
                 </div>
               </div>
-              <span className="hero-badge hero-badge-green font-mono text-xs hidden sm:inline-flex">
+              <span style={{ background: '#fff', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '20px', fontSize: '11px', fontWeight: 700, padding: '3px 10px', fontFamily: 'monospace' }}>
                 ID: {member.collegeRollNo || member.id}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-              {/* Card Canvas Visual Preview */}
-              <div className="md:col-span-5 flex flex-col items-center">
-                <div className="w-full max-w-[260px] shadow-2xl rounded-xl overflow-hidden">
-                  <IDCardCanvas member={member} interactive={false} overlayOpacity={1.0} />
-                </div>
+            {/* Content: Card + Details */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '32px', alignItems: 'center' }}>
+              {/* Card Canvas */}
+              <div style={{ width: '240px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 15px 35px rgba(0,0,0,0.18)' }}>
+                <IDCardCanvas member={member} interactive={false} overlayOpacity={1.0} />
               </div>
 
-              {/* Detailed Member Credentials */}
-              <div className="md:col-span-7 space-y-4">
+              {/* Member Details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                  <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">
-                    Member Name
-                  </span>
-                  <h2 className="text-3xl font-bold font-bebas tracking-wide text-slate-900">
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Member Name</span>
+                  <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '36px', fontWeight: 700, color: '#0f172a', margin: '4px 0 0', letterSpacing: '1px' }}>
                     {member.name}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                  <div>
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase flex items-center gap-1">
-                      <Award className="w-3.5 h-3.5 text-blue-600" /> Designation
-                    </span>
-                    <p className="text-sm font-poppins italic font-semibold text-slate-800">
-                      {member.designation}
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase flex items-center gap-1">
-                      <User className="w-3.5 h-3.5 text-blue-600" /> Roll No / ID
-                    </span>
-                    <p className="text-sm font-mono font-bold text-slate-900">
-                      {member.collegeRollNo || member.id}
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-blue-600" /> Valid Till
-                    </span>
-                    <p className="text-xs font-semibold text-slate-700">
-                      {member.validTill || '2026-08-31'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-blue-600" /> Contact Phone
-                    </span>
-                    <p className="text-xs font-semibold text-slate-700">
-                      {member.phone || 'N/A'}
-                    </p>
-                  </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+                  {[
+                    { icon: Award, label: 'Designation', value: member.designation, italic: true },
+                    { icon: User, label: 'Roll No / ID', value: member.collegeRollNo || member.id, mono: true },
+                    { icon: Calendar, label: 'Valid Till', value: member.validTill || '2026-08-31' },
+                    { icon: Phone, label: 'Contact', value: member.phone || 'N/A' },
+                  ].map(({ icon: Icon, label, value, italic, mono }) => (
+                    <div key={label}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px' }}>
+                        <Icon style={{ width: 12, height: 12, color: '#1d4ed8' }} /> {label}
+                      </span>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0, fontStyle: italic ? 'italic' : 'normal', fontFamily: mono ? 'monospace' : 'inherit' }}>{value}</p>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Security Stamp Footer */}
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                <div style={{ paddingTop: '12px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8' }}>
                   <span>Digital Security Token Verified</span>
-                  <span className="font-mono">HASH: {Math.random().toString(36).substring(2, 10).toUpperCase()}</span>
+                  <span style={{ fontFamily: 'monospace' }}>HASH: {Math.random().toString(36).substring(2, 10).toUpperCase()}</span>
                 </div>
+
+                <button onClick={() => { setSearched(false); setMember(null); setMemberId(''); }}
+                  style={{ alignSelf: 'flex-start', padding: '8px 16px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                  Search Another
+                </button>
               </div>
             </div>
           </div>
         )}
       </main>
 
-      <footer className="text-center py-4 text-xs text-slate-400">
+      <footer style={{ textAlign: 'center', padding: '16px', fontSize: '11px', color: '#94a3b8', borderTop: '1px solid #e2e8f0', background: '#fff' }}>
         © 2026 E-CELL I.T.S Engineering College • Official Card Verification System
       </footer>
     </div>
