@@ -23,7 +23,16 @@ export const DEFAULT_TEMPLATE_CONFIG = {
   glowColor: '#FFFFFF',      // Glow color hex
   showRefGuide: false,       // Reference ID card overlay guide toggle
   refGuideOpacity: 0.4,      // Reference guide opacity
-  directorSignUrl: ''        // Custom Director PNG Signature URL
+  directorSignUrl: '',       // Custom Director PNG Signature URL
+  backQrX: 42,               // Back QR Code X Position
+  backQrY: 140,              // Back QR Code Y Position
+  backQrSize: 195,           // Back QR Code Box Size in px
+  backTextX: 315,            // Back Details Text X Position
+  backTextY: 194,            // Back Details Text Start Y Position
+  backTextFontSize: 23,      // Back Details Text Font Size in px
+  backSignX: 568,            // Director Signature X Position (Right aligned)
+  backSignY: 875,            // Director Signature Y Position
+  backSignWidth: 120         // Director Signature Width/Size in px
 };
 
 export function getTemplateConfig() {

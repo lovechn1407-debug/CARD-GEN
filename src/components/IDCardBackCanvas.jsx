@@ -81,9 +81,9 @@ export default function IDCardBackCanvas({
     // LAYER 2: Dynamic Overlays on top of the Template
 
     // 2A. QR CODE inside template QR white box
-    const qrBoxX = 42;
-    const qrBoxY = 140;
-    const qrBoxSize = 195;
+    const qrBoxX = cfg.backQrX ?? 42;
+    const qrBoxY = cfg.backQrY ?? 140;
+    const qrBoxSize = cfg.backQrSize ?? 195;
 
     if (qrImage) {
       ctx.save();
@@ -92,25 +92,29 @@ export default function IDCardBackCanvas({
     }
 
     // 2B. MEMBER METADATA NEXT TO ICONS (Phone, Blood Group, Valid Till)
-    const infoX = 315;
+    const infoX = cfg.backTextX ?? 315;
+    const startY = cfg.backTextY ?? 194;
+    const fontSize = cfg.backTextFontSize ?? 23;
+    const lineGap = Math.round(fontSize * 2.4);
+
     ctx.textAlign = 'left';
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '600 23px "Inter", sans-serif';
+    ctx.font = `600 ${fontSize}px "Inter", sans-serif`;
 
     // Phone
-    ctx.fillText(member?.phone || '8383090874', infoX, 194);
+    ctx.fillText(member?.phone || '8383090874', infoX, startY);
 
     // Blood Group
     const bloodTxt = member?.bloodGroup
       ? (member.bloodGroup.includes('+') || member.bloodGroup.includes('-') ? member.bloodGroup : `${member.bloodGroup} +ve`)
       : 'B +ve';
-    ctx.fillText(bloodTxt, infoX, 250);
+    ctx.fillText(bloodTxt, infoX, startY + lineGap);
 
     // Valid Till
     const validTxt = member?.validTill
       ? (member.validTill.toUpperCase().includes('SEPT') ? member.validTill : `SEPT ${new Date(member.validTill).getFullYear() || 2029}`)
       : 'SEPT 2029';
-    ctx.fillText(validTxt, infoX, 306);
+    ctx.fillText(validTxt, infoX, startY + lineGap * 2);
 
     // 2C. PRINT DATE TIMESTAMP (Above "PRINT DATE" label at bottom left)
     const now = new Date();
@@ -122,20 +126,22 @@ export default function IDCardBackCanvas({
     ctx.fillText(dateStr, 36, 922);
 
     // 2D. DIRECTOR SIGNATURE (Above "DIRECTOR" label at bottom right)
-    const rightX = CARD_WIDTH - 40;
+    const signX = cfg.backSignX ?? (CARD_WIDTH - 40);
+    const signY = cfg.backSignY ?? 875;
+    const signW = cfg.backSignWidth ?? 120;
+
     if (directorSignImg) {
-      const signW = 120;
       const signH = (signW * directorSignImg.height) / directorSignImg.width;
-      ctx.drawImage(directorSignImg, rightX - signW, 925 - signH, signW, signH);
+      ctx.drawImage(directorSignImg, signX - signW, signY + 50 - signH, signW, signH);
     } else {
       ctx.save();
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 2.5;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(rightX - 110, 890);
-      ctx.bezierCurveTo(rightX - 90, 860, rightX - 70, 910, rightX - 50, 880);
-      ctx.bezierCurveTo(rightX - 40, 865, rightX - 30, 900, rightX - 10, 885);
+      ctx.moveTo(signX - 110, signY + 15);
+      ctx.bezierCurveTo(signX - 90, signY - 15, signX - 70, signY + 35, signX - 50, signY + 5);
+      ctx.bezierCurveTo(signX - 40, signY - 10, signX - 30, signY + 25, signX - 10, signY + 10);
       ctx.stroke();
       ctx.restore();
     }

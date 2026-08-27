@@ -444,7 +444,7 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
                   Upload custom PNG transparent signature of the Director to appear on the back of all cards above the "DIRECTOR" text label.
                 </p>
-                <div style={{ display: 'flex', itemsAlign: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#1d4ed8', color: '#ffffff', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                     <Upload style={{ width: 14, height: 14 }} />
                     {isUploadingSign ? 'Uploading...' : 'Import Director Signature PNG'}
@@ -467,6 +467,107 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Back Side Layout Controls Card */}
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0, paddingBottom: '8px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Sliders style={{ width: '16px', height: '16px', color: '#2563eb' }} /> Back Side QR Code & Details Move / Zoom Controls
+            </h4>
+
+            {/* QR Code Move & Zoom */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>1. Verification QR Code Area</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                    <span>QR Position X</span><span>{config.backQrX ?? 42}px</span>
+                  </div>
+                  <input type="range" min="10" max="250" step="1" value={config.backQrX ?? 42}
+                    onChange={(e) => setConfig({ ...config, backQrX: parseInt(e.target.value) })}
+                    style={{ width: '100%', height: '5px', accentColor: '#2563eb', cursor: 'pointer' }} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                    <span>QR Position Y</span><span>{config.backQrY ?? 140}px</span>
+                  </div>
+                  <input type="range" min="80" max="300" step="1" value={config.backQrY ?? 140}
+                    onChange={(e) => setConfig({ ...config, backQrY: parseInt(e.target.value) })}
+                    style={{ width: '100%', height: '5px', accentColor: '#2563eb', cursor: 'pointer' }} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                    <span>QR Size (Zoom)</span><span>{config.backQrSize ?? 195}px</span>
+                  </div>
+                  <input type="range" min="100" max="280" step="2" value={config.backQrSize ?? 195}
+                    onChange={(e) => setConfig({ ...config, backQrSize: parseInt(e.target.value) })}
+                    style={{ width: '100%', height: '5px', accentColor: '#2563eb', cursor: 'pointer' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Back Text Details Move & Zoom */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>2. Back Details Text (Phone, Blood Group, Valid Till)</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                    <span>Text Position X</span><span>{config.backTextX ?? 315}px</span>
+                  </div>
+                  <input type="range" min="150" max="450" step="1" value={config.backTextX ?? 315}
+                    onChange={(e) => setConfig({ ...config, backTextX: parseInt(e.target.value) })}
+                    style={{ width: '100%', height: '5px', accentColor: '#2563eb', cursor: 'pointer' }} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                    <span>Text Start Y</span><span>{config.backTextY ?? 194}px</span>
+                  </div>
+                  <input type="range" min="100" max="300" step="1" value={config.backTextY ?? 194}
+                    onChange={(e) => setConfig({ ...config, backTextY: parseInt(e.target.value) })}
+                    style={{ width: '100%', height: '5px', accentColor: '#2563eb', cursor: 'pointer' }} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                    <span>Text Font Size (Zoom)</span><span>{config.backTextFontSize ?? 23}px</span>
+                  </div>
+                  <input type="range" min="14" max="36" step="1" value={config.backTextFontSize ?? 23}
+                    onChange={(e) => setConfig({ ...config, backTextFontSize: parseInt(e.target.value) })}
+                    style={{ width: '100%', height: '5px', accentColor: '#2563eb', cursor: 'pointer' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Director Signature Move & Zoom */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>3. Director Signature Area</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                    <span>Sign Position X</span><span>{config.backSignX ?? 568}px</span>
+                  </div>
+                  <input type="range" min="300" max="608" step="1" value={config.backSignX ?? 568}
+                    onChange={(e) => setConfig({ ...config, backSignX: parseInt(e.target.value) })}
+                    style={{ width: '100%', height: '5px', accentColor: '#2563eb', cursor: 'pointer' }} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                    <span>Sign Position Y</span><span>{config.backSignY ?? 875}px</span>
+                  </div>
+                  <input type="range" min="700" max="950" step="1" value={config.backSignY ?? 875}
+                    onChange={(e) => setConfig({ ...config, backSignY: parseInt(e.target.value) })}
+                    style={{ width: '100%', height: '5px', accentColor: '#2563eb', cursor: 'pointer' }} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                    <span>Sign Width (Zoom)</span><span>{config.backSignWidth ?? 120}px</span>
+                  </div>
+                  <input type="range" min="60" max="220" step="2" value={config.backSignWidth ?? 120}
+                    onChange={(e) => setConfig({ ...config, backSignWidth: parseInt(e.target.value) })}
+                    style={{ width: '100%', height: '5px', accentColor: '#2563eb', cursor: 'pointer' }} />
+                </div>
+              </div>
+            </div>
+
           </div>
 
         </div>
