@@ -1,19 +1,6 @@
-// Firebase Firestore & Realtime Database Sync Manager for CARD-GEN
-import { db, rtdb, ensureAnonymousAuth } from './firebase';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  onSnapshot 
-} from "firebase/firestore";
-import { ref as rtdbRef, set as rtdbSet, onValue as rtdbOnValue, remove as rtdbRemove } from "firebase/database";
-
-const MEMBERS_KEY = 'ecell_id_members_v1';
-const BATCHES_KEY = 'ecell_id_batches_v1';
-const BATCH_EDITS_KEY = 'ecell_id_batch_edits_v1';
-const TEMPLATE_CONFIG_KEY = 'ecell_id_template_config_v1';
+// 100% Firebase Realtime Database Data Manager for CARD-GEN
+import { rtdb, ensureAnonymousAuth } from './firebase';
+import { ref as rtdbRef, set as rtdbSet, onValue as rtdbOnValue, get as rtdbGet, remove as rtdbRemove } from "firebase/database";
 
 export const DEFAULT_TEMPLATE_CONFIG = {
   nameY: 0.74,               // Name vertical position
@@ -46,7 +33,7 @@ export const DEFAULT_TEMPLATE_CONFIG = {
   backSignWidth: 120         // Director Signature Width/Size in px
 };
 
-// Initial default member records
+// Initial default member records to seed Realtime Database if empty
 const DEFAULT_MEMBERS = [
   {
     id: 'ECELL2026-001',
@@ -87,106 +74,89 @@ const DEFAULT_BATCHES = [
   }
 ];
 
-// In-Memory Cache
+// In-Memory Live State
 let cachedMembers = [...DEFAULT_MEMBERS];
 let cachedBatches = [...DEFAULT_BATCHES];
 let cachedEdits = [];
 let cachedConfig = { ...DEFAULT_TEMPLATE_CONFIG };
 
 // -------------------------------------------------------------
-// REAL-TIME SUBSCRIPTIONS (Firestore & Realtime DB Sync)
+// REAL-TIME FIREBASE REALTIME DATABASE SUBSCRIPTIONS (rtdb)
 // -------------------------------------------------------------
 
 export function subscribeMembers(callback) {
   ensureAnonymousAuth();
-  // Subscribe to Realtime Database
-  const rtdbMembersRef = rtdbRef(rtdb, 'members');
-  rtdbOnValue(rtdbMembersRef, (snapshot) => {
+  const membersRef = rtdbRef(rtdb, 'members');
+  return rtdbOnValue(membersRef, (snapshot) => {
     const val = snapshot.val();
-    if (val) {
-      const list = Array.isArray(val) ? val : Object.values(val);
-      cachedMembers = list;
-      localStorage.setItem(MEMBERS_KEY, JSON.stringify(list));
-      callback(list);
+    if (!val) {
+      seedRealtimeDatabase();
+      callback(DEFAULT_MEMBERS);
       return;
     }
-  }, () => {});
-
-  // Subscribe to Firestore
-  const membersRef = collection(db, "members");
-  return onSnapshot(membersRef, (snapshot) => {
-    if (snapshot.empty) {
-      seedFirestoreData();
-      return;
-    }
-    const list = [];
-    snapshot.forEach((docSnap) => {
-      list.push({ id: docSnap.id, ...docSnap.data() });
-    });
+    const list = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
     cachedMembers = list;
-    localStorage.setItem(MEMBERS_KEY, JSON.stringify(list));
     callback(list);
   }, (err) => {
-    callback(getMembersLocal());
+    console.warn("Realtime DB members subscription warning:", err);
+    callback(cachedMembers);
   });
 }
 
 export function subscribeBatches(callback) {
   ensureAnonymousAuth();
-  const batchesRef = collection(db, "batches");
-  return onSnapshot(batchesRef, (snapshot) => {
-    if (snapshot.empty) {
-      callback(cachedBatches);
+  const batchesRef = rtdbRef(rtdb, 'batches');
+  return rtdbOnValue(batchesRef, (snapshot) => {
+    const val = snapshot.val();
+    if (!val) {
+      callback(DEFAULT_BATCHES);
       return;
     }
-    const list = [];
-    snapshot.forEach((docSnap) => {
-      list.push({ batchId: docSnap.id, ...docSnap.data() });
-    });
+    const list = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
     cachedBatches = list;
-    localStorage.setItem(BATCHES_KEY, JSON.stringify(list));
     callback(list);
   }, () => {
-    callback(getBatchesLocal());
+    callback(cachedBatches);
   });
 }
 
 export function subscribeBatchEdits(callback) {
   ensureAnonymousAuth();
-  const editsRef = collection(db, "batch_edits");
-  return onSnapshot(editsRef, (snapshot) => {
-    const list = [];
-    snapshot.forEach((docSnap) => {
-      list.push({ id: docSnap.id, ...docSnap.data() });
-    });
+  const editsRef = rtdbRef(rtdb, 'batch_edits');
+  return rtdbOnValue(editsRef, (snapshot) => {
+    const val = snapshot.val();
+    if (!val) {
+      callback([]);
+      return;
+    }
+    const list = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
     cachedEdits = list;
-    localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(list));
     callback(list);
   }, () => {
-    callback(getBatchEditsLocal());
+    callback(cachedEdits);
   });
 }
 
 export function subscribeTemplateConfig(callback) {
   ensureAnonymousAuth();
-  const configDocRef = doc(db, "config", "template_studio");
-  return onSnapshot(configDocRef, (docSnap) => {
-    if (docSnap.exists()) {
-      const data = { ...DEFAULT_TEMPLATE_CONFIG, ...docSnap.data() };
-      cachedConfig = data;
-      localStorage.setItem(TEMPLATE_CONFIG_KEY, JSON.stringify(data));
-      callback(data);
-    } else {
-      setDoc(configDocRef, DEFAULT_TEMPLATE_CONFIG).catch(() => {});
-      callback(cachedConfig);
+  const configRef = rtdbRef(rtdb, 'config/template_studio');
+  return rtdbOnValue(configRef, (snapshot) => {
+    const val = snapshot.val();
+    if (!val) {
+      rtdbSet(configRef, DEFAULT_TEMPLATE_CONFIG).catch(() => {});
+      callback(DEFAULT_TEMPLATE_CONFIG);
+      return;
     }
+    const data = { ...DEFAULT_TEMPLATE_CONFIG, ...val };
+    cachedConfig = data;
+    callback(data);
   }, () => {
-    callback(getTemplateConfigLocal());
+    callback(cachedConfig);
   });
 }
 
 // -------------------------------------------------------------
-// READ & WRITE OPERATIONS (Sync to BOTH Firestore & Realtime DB)
+// READ & WRITE OPERATIONS (100% REALTIME DATABASE ONLY)
 // -------------------------------------------------------------
 
 export function getTemplateConfig() {
@@ -195,13 +165,11 @@ export function getTemplateConfig() {
 
 export async function saveTemplateConfig(config) {
   cachedConfig = config;
-  localStorage.setItem(TEMPLATE_CONFIG_KEY, JSON.stringify(config));
   try {
     await ensureAnonymousAuth();
-    await setDoc(doc(db, "config", "template_studio"), config);
     await rtdbSet(rtdbRef(rtdb, 'config/template_studio'), config);
   } catch (err) {
-    console.error("Error saving template config to Firebase:", err);
+    console.error("Error saving template config to Realtime Database:", err);
   }
 }
 
@@ -220,40 +188,34 @@ export async function updateMember(updatedMember) {
   } else {
     cachedMembers.push(updatedMember);
   }
-  localStorage.setItem(MEMBERS_KEY, JSON.stringify(cachedMembers));
   try {
     await ensureAnonymousAuth();
-    await setDoc(doc(db, "members", updatedMember.id), updatedMember);
     await rtdbSet(rtdbRef(rtdb, `members/${updatedMember.id}`), updatedMember);
   } catch (err) {
-    console.error("Error updating member in Firebase:", err);
+    console.error("Error updating member in Realtime Database:", err);
   }
   return cachedMembers;
 }
 
 export async function saveMembers(membersList) {
   cachedMembers = membersList;
-  localStorage.setItem(MEMBERS_KEY, JSON.stringify(membersList));
   try {
     await ensureAnonymousAuth();
     for (const m of membersList) {
-      await setDoc(doc(db, "members", m.id), m);
       await rtdbSet(rtdbRef(rtdb, `members/${m.id}`), m);
     }
   } catch (err) {
-    console.error("Error saving members to Firebase:", err);
+    console.error("Error saving members to Realtime Database:", err);
   }
 }
 
 export async function deleteMember(id) {
   cachedMembers = cachedMembers.filter((m) => m.id !== id);
-  localStorage.setItem(MEMBERS_KEY, JSON.stringify(cachedMembers));
   try {
     await ensureAnonymousAuth();
-    await deleteDoc(doc(db, "members", id));
     await rtdbRemove(rtdbRef(rtdb, `members/${id}`));
   } catch (err) {
-    console.error("Error deleting member in Firebase:", err);
+    console.error("Error deleting member in Realtime Database:", err);
   }
   return cachedMembers;
 }
@@ -264,15 +226,13 @@ export function getBatches() {
 
 export async function saveBatches(batchesList) {
   cachedBatches = batchesList;
-  localStorage.setItem(BATCHES_KEY, JSON.stringify(batchesList));
   try {
     await ensureAnonymousAuth();
     for (const b of batchesList) {
-      await setDoc(doc(db, "batches", b.batchId), b);
       await rtdbSet(rtdbRef(rtdb, `batches/${b.batchId}`), b);
     }
   } catch (err) {
-    console.error("Error saving batches to Firebase:", err);
+    console.error("Error saving batches to Realtime Database:", err);
   }
 }
 
@@ -303,14 +263,12 @@ export async function saveBatchEdit(editPayload) {
     };
     cachedEdits.push(record);
   }
-  localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(cachedEdits));
 
   try {
     await ensureAnonymousAuth();
-    await setDoc(doc(db, "batch_edits", editId), record);
     await rtdbSet(rtdbRef(rtdb, `batch_edits/${editId}`), record);
   } catch (err) {
-    console.error("Error saving batch edit to Firebase:", err);
+    console.error("Error saving batch edit to Realtime Database:", err);
   }
   return cachedEdits;
 }
@@ -321,7 +279,6 @@ export async function approveBatchEdit(batchId, collegeRollNo) {
   
   if (editItem) {
     editItem.status = 'CONFIRMED';
-    localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(cachedEdits));
     
     const memberIndex = cachedMembers.findIndex((m) => m.collegeRollNo === collegeRollNo || m.id === editItem.memberId);
     if (memberIndex !== -1) {
@@ -332,53 +289,24 @@ export async function approveBatchEdit(batchId, collegeRollNo) {
 
     try {
       await ensureAnonymousAuth();
-      await updateDoc(doc(db, "batch_edits", editId), { status: 'CONFIRMED' });
       await rtdbSet(rtdbRef(rtdb, `batch_edits/${editId}/status`), 'CONFIRMED');
     } catch (err) {}
   }
   return cachedEdits;
 }
 
-// Auto seed default data to both Firestore and Realtime Database
-async function seedFirestoreData() {
+// Auto seed default data to Realtime Database
+async function seedRealtimeDatabase() {
   try {
     await ensureAnonymousAuth();
     for (const m of DEFAULT_MEMBERS) {
-      await setDoc(doc(db, "members", m.id), m);
       await rtdbSet(rtdbRef(rtdb, `members/${m.id}`), m);
     }
     for (const b of DEFAULT_BATCHES) {
-      await setDoc(doc(db, "batches", b.batchId), b);
       await rtdbSet(rtdbRef(rtdb, `batches/${b.batchId}`), b);
     }
-    await setDoc(doc(db, "config", "template_studio"), DEFAULT_TEMPLATE_CONFIG);
     await rtdbSet(rtdbRef(rtdb, 'config/template_studio'), DEFAULT_TEMPLATE_CONFIG);
   } catch (e) {
-    console.warn("Auto-seed error:", e);
+    console.warn("Realtime DB Auto-seed error:", e);
   }
-}
-
-// Fallbacks for local storage
-function getMembersLocal() {
-  const data = localStorage.getItem(MEMBERS_KEY);
-  if (!data) return DEFAULT_MEMBERS;
-  try { return JSON.parse(data); } catch (e) { return DEFAULT_MEMBERS; }
-}
-
-function getBatchesLocal() {
-  const data = localStorage.getItem(BATCHES_KEY);
-  if (!data) return DEFAULT_BATCHES;
-  try { return JSON.parse(data); } catch (e) { return DEFAULT_BATCHES; }
-}
-
-function getBatchEditsLocal() {
-  const data = localStorage.getItem(BATCH_EDITS_KEY);
-  if (!data) return [];
-  try { return JSON.parse(data); } catch (e) { return []; }
-}
-
-function getTemplateConfigLocal() {
-  const data = localStorage.getItem(TEMPLATE_CONFIG_KEY);
-  if (!data) return DEFAULT_TEMPLATE_CONFIG;
-  try { return { ...DEFAULT_TEMPLATE_CONFIG, ...JSON.parse(data) }; } catch (e) { return DEFAULT_TEMPLATE_CONFIG; }
 }

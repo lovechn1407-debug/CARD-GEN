@@ -7,7 +7,6 @@ import {
   signOut, 
   onAuthStateChanged 
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
 
 // User's Firebase Configuration
@@ -22,10 +21,9 @@ const firebaseConfig = {
   databaseURL: "https://id-gen-89427-default-rtdb.firebaseio.com"
 };
 
-// Initialize Firebase
+// Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
 export const rtdb = getDatabase(app);
 export const googleProvider = new GoogleAuthProvider();
 
