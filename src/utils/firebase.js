@@ -2,7 +2,6 @@ import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
-  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   signInAnonymously, 
@@ -11,7 +10,7 @@ import {
 } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
-// User's Firebase Configuration
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBRtac6GfcqrRpSxmBo8QlQ3hETQkP_9K4",
   authDomain: "id-gen-89427.firebaseapp.com",
@@ -23,16 +22,12 @@ const firebaseConfig = {
   databaseURL: "https://id-gen-89427-default-rtdb.firebaseio.com"
 };
 
-// Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const rtdb = getDatabase(app);
-export const googleProvider = new GoogleAuthProvider();
 
-// Custom Google Provider configuration to prevent COOP issues
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // Hardcoded Allowed Admin Gmail Emails
 export const AUTHORIZED_ADMIN_EMAILS = [
@@ -48,57 +43,32 @@ export function isEmailAuthorized(email, customAllowedEmail) {
   return AUTHORIZED_ADMIN_EMAILS.some((e) => lower === e.toLowerCase().trim());
 }
 
-// Sign in with Google (Handles Popup & Redirect to bypass COOP warnings)
-export async function loginWithGoogle(customAllowedEmail) {
-  try {
-    let user = null;
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      user = result?.user;
-    } catch (popupErr) {
-      console.warn("Popup blocked or COOP warning, switching to Redirect mode:", popupErr);
-      await signInWithRedirect(auth, googleProvider);
-      return null;
-    }
-
-    if (!user || !user.email) {
-      await signOut(auth);
-      throw new Error("No email address returned from Google.");
-    }
-    
-    // Validate email authorization
-    const authorized = isEmailAuthorized(user.email, customAllowedEmail);
-    if (!authorized) {
-      await signOut(auth);
-      throw new Error(`Access Denied: "${user.email}" is NOT authorized. Only the registered Admin Gmail (${customAllowedEmail || AUTHORIZED_ADMIN_EMAILS[0]}) can access this site.`);
-    }
-    return user;
-  } catch (error) {
-    console.error("Google Sign-In Error:", error);
-    throw error;
-  }
+// Trigger Google Redirect (NO POPUP = NO COOP WARNINGS)
+export async function loginWithGoogle() {
+  await signInWithRedirect(auth, googleProvider);
+  // Page will reload automatically; result is handled in checkRedirectAuth()
 }
 
-// Handle Redirect Login Result on App Launch
+// Called on App mount to finalize redirect auth result
 export async function checkRedirectAuth(customAllowedEmail) {
   try {
     const result = await getRedirectResult(auth);
-    if (result && result.user) {
-      const user = result.user;
-      const authorized = isEmailAuthorized(user.email, customAllowedEmail);
-      if (!authorized) {
-        await signOut(auth);
-        throw new Error(`Access Denied: "${user.email}" is NOT authorized.`);
-      }
-      return user;
+    if (!result || !result.user) return null;
+
+    const user = result.user;
+    const authorized = isEmailAuthorized(user.email, customAllowedEmail);
+    if (!authorized) {
+      await signOut(auth);
+      return { error: `Access Denied: "${user.email}" is NOT authorized. Only the registered Admin Gmail (${customAllowedEmail || AUTHORIZED_ADMIN_EMAILS[0]}) can access this site.` };
     }
+    return user;
   } catch (e) {
-    console.warn("Redirect Auth Check Warning:", e);
+    console.warn("Redirect Auth Result Error:", e);
+    return null;
   }
-  return null;
 }
 
-// Sign in Anonymously (For Verifiers & Public Users)
+// Anonymous Auth (for verifiers & public)
 export async function ensureAnonymousAuth() {
   if (auth.currentUser) return auth.currentUser;
   try {
@@ -110,7 +80,6 @@ export async function ensureAnonymousAuth() {
   }
 }
 
-// Sign Out
 export async function logoutUser() {
   try {
     await signOut(auth);
@@ -119,7 +88,6 @@ export async function logoutUser() {
   }
 }
 
-// Subscribe to Auth State Changes
 export function subscribeToAuth(callback) {
   return onAuthStateChanged(auth, (user) => {
     callback(user);
