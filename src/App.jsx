@@ -4,6 +4,7 @@ import AdminMembers from './components/AdminMembers';
 import AdminBatchEdits from './components/AdminBatchEdits';
 import AdminExport from './components/AdminExport';
 import AdminTemplateStudio from './components/AdminTemplateStudio';
+import AdminLoginGate from './components/AdminLoginGate';
 import PublicVerifyPortal from './components/PublicVerifyPortal';
 import PublicEditPortal from './components/PublicEditPortal';
 import AddMemberModal from './components/AddMemberModal';
@@ -33,7 +34,7 @@ export default function App() {
     // 1. Subscribe to Firebase Auth
     const unsubAuth = subscribeToAuth((u) => setUser(u));
 
-    // 2. Real-time Firestore Subscriptions (Sync across all devices)
+    // 2. Real-time Firestore Subscriptions
     const unsubMembers = subscribeMembers((list) => setMembers(list));
     const unsubBatches = subscribeBatches((list) => setBatches(list));
 
@@ -65,8 +66,12 @@ export default function App() {
     await deleteMember(id);
   };
 
+  // Public hash routes (no admin auth required)
   if (currentRoute.startsWith('#/verify')) return <PublicVerifyPortal />;
   if (currentRoute.startsWith('#/public-edit')) return <PublicEditPortal />;
+
+  // Check if Admin user is authenticated via Google
+  const isAdminAuthenticated = user && !user.isAnonymous;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
@@ -79,37 +84,48 @@ export default function App() {
       />
 
       <main style={{ flex: 1, maxWidth: '1280px', margin: '0 auto', width: '100%', padding: '32px 20px', boxSizing: 'border-box' }}>
-        {activeTab === 'members' && (
-          <AdminMembers
-            members={members}
-            batches={batches}
-            onAddMember={handleAddMember}
-            onImportBatch={handleImportBatch}
-            onUpdateMember={handleUpdateMember}
-            onDeleteMember={handleDeleteMember}
-          />
-        )}
-        {activeTab === 'template-studio' && (
-          <AdminTemplateStudio members={members} />
-        )}
-        {activeTab === 'batches' && (
-          <AdminBatchEdits batches={batches} members={members} />
-        )}
-        {activeTab === 'export' && (
-          <AdminExport members={members} batches={batches} />
-        )}
+        {/* Public Portals inside Tab bar */}
         {activeTab === 'verify' && <PublicVerifyPortal />}
         {activeTab === 'edit-portal' && <PublicEditPortal />}
+
+        {/* Admin Features (Gated behind Google Authentication) */}
+        {!isAdminAuthenticated && activeTab !== 'verify' && activeTab !== 'edit-portal' ? (
+          <AdminLoginGate user={user} onAuthenticated={(u) => setUser(u)} />
+        ) : (
+          <>
+            {activeTab === 'members' && (
+              <AdminMembers
+                members={members}
+                batches={batches}
+                onAddMember={handleAddMember}
+                onImportBatch={handleImportBatch}
+                onUpdateMember={handleUpdateMember}
+                onDeleteMember={handleDeleteMember}
+              />
+            )}
+            {activeTab === 'template-studio' && (
+              <AdminTemplateStudio members={members} />
+            )}
+            {activeTab === 'batches' && (
+              <AdminBatchEdits batches={batches} members={members} />
+            )}
+            {activeTab === 'export' && (
+              <AdminExport members={members} batches={batches} />
+            )}
+          </>
+        )}
       </main>
 
       <footer style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '20px', marginTop: 'auto' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '12px', color: '#64748b' }}>
           <div>
-            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Firebase Realtime Cloud Connected
+            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Firebase Protected & Realtime Connected
           </div>
           <div>
-            Database:{' '}
-            <span style={{ fontWeight: 700, color: '#16a34a' }}>Firebase Firestore & Auth Active</span>
+            Status:{' '}
+            <span style={{ fontWeight: 700, color: isAdminAuthenticated ? '#16a34a' : '#d97706' }}>
+              {isAdminAuthenticated ? `Admin Signed In (${user.email})` : 'Admin Authentication Required'}
+            </span>
           </div>
         </div>
       </footer>
