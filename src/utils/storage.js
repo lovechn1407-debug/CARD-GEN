@@ -43,7 +43,7 @@ const DEFAULT_MEMBERS = [
     validTill: '2026-08-31',
     phone: '+91 9876543210',
     bloodGroup: 'O+',
-    photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
+    photoUrl: '',
     batchId: 'BATCH-DEFAULT-2026',
     photoTransform: { x: 0, y: -20, scale: 1.05, rotation: 0 },
     createdAt: new Date().toISOString()
@@ -56,7 +56,7 @@ const DEFAULT_MEMBERS = [
     validTill: '2026-08-31',
     phone: '+91 9123456789',
     bloodGroup: 'B+',
-    photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    photoUrl: '',
     batchId: 'BATCH-DEFAULT-2026',
     photoTransform: { x: 0, y: -20, scale: 1, rotation: 0 },
     createdAt: new Date().toISOString()

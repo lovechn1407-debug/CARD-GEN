@@ -80,7 +80,7 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
       if (matchedFile) {
         try { photoUrl = await uploadToImgBB(matchedFile); } catch (e) {}
       }
-      if (!photoUrl) photoUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80';
+      if (!photoUrl) photoUrl = '';
       importedMembers.push({ id: `ECELL-${Date.now()}-${i}`, collegeRollNo: rollNo, name, designation: desig, validTill: row[mappings.validTill] || '2026-08-31', phone: row[mappings.phone] || '', bloodGroup: row[mappings.bloodGroup] || 'O+', photoUrl, batchId, photoTransform: { x: 0, y: -20, scale: 1, rotation: 0 }, createdAt: new Date().toISOString() });
     }
     setIsProcessing(false);

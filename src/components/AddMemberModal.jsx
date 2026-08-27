@@ -9,7 +9,7 @@ export default function AddMemberModal({ onClose, onAddMember }) {
   const [formData, setFormData] = useState({
     collegeRollNo: '', name: '', designation: '',
     validTill: '2026-08-31', phone: '', bloodGroup: 'O+',
-    photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'
+    photoUrl: ''
   });
   const [isUploading, setIsUploading] = useState(false);
 

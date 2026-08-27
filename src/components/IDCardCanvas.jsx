@@ -142,6 +142,35 @@ export default function IDCardCanvas({
       // PASS 3: Crisp original PNG image on top
       ctx.drawImage(photoImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
       ctx.restore();
+    } else {
+      // Draw Red Highlight Box for missing photo on canvas
+      ctx.save();
+      const centerX = CARD_WIDTH / 2 + transform.x;
+      const centerY = CARD_HEIGHT * 0.40 + transform.y;
+      const boxW = 280;
+      const boxH = 340;
+
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(centerX - boxW / 2, centerY - boxH / 2, boxW, boxH, 16);
+      } else {
+        ctx.rect(centerX - boxW / 2, centerY - boxH / 2, boxW, boxH);
+      }
+      ctx.fill();
+
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 8]);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⚠️ NO PHOTO UPLOADED', centerX, centerY);
+      ctx.restore();
     }
 
     // LAYER 3: Black Fade Overlay (Custom Start Y and Opacity)

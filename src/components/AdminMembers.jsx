@@ -4,7 +4,7 @@ import FlippableIDCard from './FlippableIDCard';
 import AddMemberModal from './AddMemberModal';
 import BulkCsvModal from './BulkCsvModal';
 import CardEditorModal from './CardEditorModal';
-import { UserPlus, FileSpreadsheet, Search, SlidersHorizontal, Edit3, Trash2, CreditCard } from 'lucide-react';
+import { UserPlus, FileSpreadsheet, Search, SlidersHorizontal, Edit3, Trash2, CreditCard, AlertTriangle } from 'lucide-react';
 
 export default function AdminMembers({ members, batches, onAddMember, onImportBatch, onUpdateMember, onDeleteMember }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -88,41 +88,61 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
-          {filteredMembers.map((member) => (
-            <div
-              key={member.id}
-              style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'box-shadow 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)'}
-              onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
-            >
-              {/* 3D Flippable Card Canvas with Hover Overlay */}
-              <div style={{ position: 'relative' }}>
-                <FlippableIDCard
-                  member={member}
-                  interactive={false}
-                  overlayOpacity={1.0}
-                  showFlipButton={false}
-                  onModifyClick={() => setEditingMember(member)}
-                />
-              </div>
+          {filteredMembers.map((member) => {
+            const rawUrl = (member.photoUrl || '').trim();
+            const isMissingPhoto = !rawUrl || rawUrl.includes('unsplash');
 
-              {/* Member Info */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', fontFamily: 'monospace' }}>
-                    ID: {member.collegeRollNo || member.id}
-                  </span>
-                  <span style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '2px 8px' }}>
-                    Verified
-                  </span>
+            return (
+              <div
+                key={member.id}
+                style={{
+                  background: isMissingPhoto ? '#fef2f2' : '#ffffff',
+                  border: isMissingPhoto ? '2px solid #ef4444' : '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  boxShadow: isMissingPhoto ? '0 0 16px rgba(239, 68, 68, 0.25)' : '0 1px 3px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s ease',
+                  position: 'relative'
+                }}
+              >
+                {/* 3D Flippable Card Canvas with Hover Overlay */}
+                <div style={{ position: 'relative' }}>
+                  <FlippableIDCard
+                    member={member}
+                    interactive={false}
+                    overlayOpacity={1.0}
+                    showFlipButton={false}
+                    onModifyClick={() => setEditingMember(member)}
+                  />
                 </div>
-                <h4 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: '4px 0 2px', lineHeight: 1.2 }}>
-                  {member.name}
-                </h4>
-                <p style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', fontSize: '12px', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {member.designation}
-                </p>
-              </div>
+
+                {/* Member Info */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', fontFamily: 'monospace' }}>
+                      ID: {member.collegeRollNo || member.id}
+                    </span>
+                    
+                    {isMissingPhoto ? (
+                      <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '20px', fontSize: '10px', fontWeight: 800, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <AlertTriangle style={{ width: 11, height: 11 }} /> MISSING PHOTO
+                      </span>
+                    ) : (
+                      <span style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '2px 8px' }}>
+                        Verified
+                      </span>
+                    )}
+                  </div>
+                  <h4 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: '4px 0 2px', lineHeight: 1.2 }}>
+                    {member.name}
+                  </h4>
+                  <p style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', fontSize: '12px', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {member.designation}
+                  </p>
+                </div>
 
               {/* Quick Actions */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>

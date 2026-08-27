@@ -39,13 +39,11 @@ export async function renderMemberCardCanvas(member) {
   }
 
   let photoImg = null;
-  if (member.photoUrl) {
+  if (member.photoUrl && !member.photoUrl.includes('unsplash')) {
     try {
       photoImg = await loadImage(member.photoUrl);
     } catch (e) {
-      try {
-        photoImg = await loadImage('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80');
-      } catch (err) {}
+      photoImg = null;
     }
   }
 
