@@ -1,48 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { loginWithGoogle, checkRedirectAuth, logoutUser } from '../utils/firebase';
+import React, { useState } from 'react';
+import { loginWithGoogle } from '../utils/firebase';
 import { getTemplateConfig } from '../utils/storage';
-import { Lock, ShieldAlert, CheckCircle2, ShieldCheck, Loader } from 'lucide-react';
+import { Lock, ShieldAlert, CheckCircle2, ShieldCheck } from 'lucide-react';
 
-export default function AdminLoginGate({ user, onAuthenticated }) {
+export default function AdminLoginGate() {
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
   const cfg = getTemplateConfig();
   const currentAllowedEmail = cfg.allowedAdminEmail;
 
-  // On mount, check redirect result (handles the page load after Google redirect)
-  useEffect(() => {
-    async function handleRedirectResult() {
-      const result = await checkRedirectAuth(currentAllowedEmail);
-      if (result && result.error) {
-        setErrorMsg(result.error);
-        await logoutUser();
-      } else if (result && result.email) {
-        if (onAuthenticated) onAuthenticated(result);
-      }
-      setIsChecking(false);
-    }
-    handleRedirectResult();
-  }, []);
-
   const handleGoogleLogin = async () => {
     setIsSigningIn(true);
     setErrorMsg('');
-    // signInWithRedirect navigates away — no return value; result handled on next load
-    await loginWithGoogle();
+    try {
+      // Triggers full-page Google redirect — result is restored on next page load
+      await loginWithGoogle();
+    } catch (err) {
+      setErrorMsg(err.message || 'Google Sign-In failed. Please try again.');
+      setIsSigningIn(false);
+    }
   };
-
-  if (isChecking) {
-    return (
-      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-          <Loader style={{ width: 32, height: 32, color: '#1d4ed8', animation: 'spin 1s linear infinite' }} />
-          <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Verifying authentication...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', boxSizing: 'border-box' }}>

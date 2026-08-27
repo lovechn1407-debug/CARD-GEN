@@ -18,7 +18,7 @@ import {
   deleteMember,
   getTemplateConfig
 } from './utils/storage';
-import { subscribeToAuth, isEmailAuthorized, checkRedirectAuth } from './utils/firebase';
+import { subscribeToAuth, isEmailAuthorized } from './utils/firebase';
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
@@ -27,17 +27,20 @@ export default function App() {
   const [members, setMembers] = useState([]);
   const [batches, setBatches] = useState([]);
   const [user, setUser] = useState(null);
+  // authLoading = true while Firebase resolves auth state (handles redirect login restore)
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
 
   useEffect(() => {
-    // 1. Subscribe to Firebase Auth & Handle Redirect Results
-    const cfg = getTemplateConfig();
-    checkRedirectAuth(cfg.allowedAdminEmail);
-    const unsubAuth = subscribeToAuth((u) => setUser(u));
+    // onAuthStateChanged fires once immediately when Firebase resolves auth
+    // (from either a fresh session, redirect result, or no session)
+    const unsubAuth = subscribeToAuth((u) => {
+      setUser(u);
+      setAuthLoading(false); // Only show login gate AFTER Firebase tells us the auth state
+    });
 
-    // 2. Real-time Firebase Subscriptions
     const unsubMembers = subscribeMembers((list) => setMembers(list));
     const unsubBatches = subscribeBatches((list) => setBatches(list));
 
@@ -52,30 +55,42 @@ export default function App() {
     };
   }, []);
 
-  const handleAddMember = async (newMember) => {
-    await updateMember(newMember);
-  };
-
+  const handleAddMember = async (newMember) => { await updateMember(newMember); };
   const handleImportBatch = async (newMembers, newBatch) => {
     await saveMembers([...members, ...newMembers]);
     await saveBatches([newBatch, ...batches]);
   };
-
-  const handleUpdateMember = async (updatedMember) => {
-    await updateMember(updatedMember);
-  };
-
-  const handleDeleteMember = async (id) => {
-    await deleteMember(id);
-  };
+  const handleUpdateMember = async (updatedMember) => { await updateMember(updatedMember); };
+  const handleDeleteMember = async (id) => { await deleteMember(id); };
 
   // Public hash routes (no admin auth required)
   if (currentRoute.startsWith('#/verify')) return <PublicVerifyPortal />;
   if (currentRoute.startsWith('#/public-edit')) return <PublicEditPortal />;
 
-  // Check if Admin user is signed in AND authorized
   const cfg = getTemplateConfig();
   const isAdminAuthenticated = user && !user.isAnonymous && isEmailAuthorized(user.email, cfg.allowedAdminEmail);
+
+  // While Firebase is resolving auth state (especially after Google redirect),
+  // show a spinner instead of the login gate to prevent the false login loop
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            border: '3px solid #e2e8f0',
+            borderTopColor: '#1d4ed8',
+            animation: 'spin 0.7s linear infinite'
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div>
+            <p style={{ fontWeight: 700, color: '#1e293b', margin: '0 0 4px', fontSize: '14px' }}>E-CELL CARD-GEN</p>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Verifying authentication...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
@@ -88,13 +103,11 @@ export default function App() {
       />
 
       <main style={{ flex: 1, maxWidth: '1280px', margin: '0 auto', width: '100%', padding: '32px 20px', boxSizing: 'border-box' }}>
-        {/* Public Portals inside Tab bar */}
         {activeTab === 'verify' && <PublicVerifyPortal />}
         {activeTab === 'edit-portal' && <PublicEditPortal />}
 
-        {/* Admin Features (Strictly Gated behind Single Authorized Gmail Authentication) */}
         {!isAdminAuthenticated && activeTab !== 'verify' && activeTab !== 'edit-portal' ? (
-          <AdminLoginGate user={user} onAuthenticated={(u) => setUser(u)} />
+          <AdminLoginGate />
         ) : (
           <>
             {activeTab === 'members' && (
@@ -107,15 +120,9 @@ export default function App() {
                 onDeleteMember={handleDeleteMember}
               />
             )}
-            {activeTab === 'template-studio' && (
-              <AdminTemplateStudio members={members} />
-            )}
-            {activeTab === 'batches' && (
-              <AdminBatchEdits batches={batches} members={members} />
-            )}
-            {activeTab === 'export' && (
-              <AdminExport members={members} batches={batches} />
-            )}
+            {activeTab === 'template-studio' && <AdminTemplateStudio members={members} />}
+            {activeTab === 'batches' && <AdminBatchEdits batches={batches} members={members} />}
+            {activeTab === 'export' && <AdminExport members={members} batches={batches} />}
           </>
         )}
       </main>
@@ -123,23 +130,19 @@ export default function App() {
       <footer style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '20px', marginTop: 'auto' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '12px', color: '#64748b' }}>
           <div>
-            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Firebase Realtime DB & Firestore Dual Synced
+            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Firebase Realtime Database
           </div>
           <div>
             Status:{' '}
             <span style={{ fontWeight: 700, color: isAdminAuthenticated ? '#16a34a' : '#dc2626' }}>
-              {isAdminAuthenticated ? `Authorized Admin (${user.email})` : 'Authorized Gmail Access Required'}
+              {isAdminAuthenticated ? `Admin: ${user.email}` : 'Login Required'}
             </span>
           </div>
         </div>
       </footer>
 
-      {showAddModal && (
-        <AddMemberModal onClose={() => setShowAddModal(false)} onAddMember={handleAddMember} />
-      )}
-      {showBulkModal && (
-        <BulkCsvModal onClose={() => setShowBulkModal(false)} onImportSuccess={handleImportBatch} />
-      )}
+      {showAddModal && <AddMemberModal onClose={() => setShowAddModal(false)} onAddMember={handleAddMember} />}
+      {showBulkModal && <BulkCsvModal onClose={() => setShowBulkModal(false)} onImportSuccess={handleImportBatch} />}
     </div>
   );
 }
