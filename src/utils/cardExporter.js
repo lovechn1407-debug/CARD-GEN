@@ -48,6 +48,13 @@ export async function renderMemberCardCanvas(member) {
     }
   }
 
+  // Wait for Google Fonts (Bebas Neue & Poppins) to be 100% loaded in browser font engine
+  if (document.fonts) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {}
+  }
+
   ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
   // LAYER 1: Background Image
@@ -105,43 +112,49 @@ export async function renderMemberCardCanvas(member) {
     ctx.restore();
   }
 
-  // LAYER 3: Black Fade Overlay (Scoped to lower chest starting at y = 460px)
+  // LAYER 3: Black Fade Overlay
+  ctx.save();
+  const fadeStartY = CARD_HEIGHT * (cfg.fadeStartY ?? 0.46);
+  const fadeHeight = CARD_HEIGHT - fadeStartY;
+  ctx.globalAlpha = cfg.fadeOpacity ?? 1.0;
+
   if (fadeImg) {
-    ctx.save();
-    const fadeStartY = CARD_HEIGHT * 0.46;
-    const fadeHeight = CARD_HEIGHT - fadeStartY;
     ctx.drawImage(fadeImg, 0, fadeStartY, CARD_WIDTH, fadeHeight);
-    ctx.restore();
   } else {
-    ctx.save();
-    const fadeGrad = ctx.createLinearGradient(0, CARD_HEIGHT * 0.46, 0, CARD_HEIGHT * 0.68);
+    const fadeGrad = ctx.createLinearGradient(0, fadeStartY, 0, fadeStartY + CARD_HEIGHT * 0.22);
     fadeGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
     fadeGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.6)');
     fadeGrad.addColorStop(1, 'rgba(0, 0, 0, 1.0)');
 
     ctx.fillStyle = fadeGrad;
-    ctx.fillRect(0, CARD_HEIGHT * 0.46, CARD_WIDTH, CARD_HEIGHT * 0.22);
+    ctx.fillRect(0, fadeStartY, CARD_WIDTH, CARD_HEIGHT * 0.22);
     ctx.fillStyle = '#000000';
-    ctx.fillRect(0, CARD_HEIGHT * 0.68, CARD_WIDTH, CARD_HEIGHT * 0.32);
-    ctx.restore();
+    ctx.fillRect(0, fadeStartY + CARD_HEIGHT * 0.22, CARD_WIDTH, CARD_HEIGHT);
   }
+  ctx.restore();
 
-  // LAYER 4: Typography ONLY
+  // LAYER 4: Dynamic Typography (Name & Designation) - Exact Parity with Canvas Component
   ctx.save();
   ctx.textAlign = 'center';
 
-  // Name in Bebas Neue
+  // 4A. MEMBER NAME
   const nameText = (member.name || 'MEMBER NAME').toUpperCase();
-  ctx.font = 'bold 72px "Bebas Neue", "Arial Black", sans-serif';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.letterSpacing = '1px';
-  ctx.fillText(nameText, CARD_WIDTH / 2, CARD_HEIGHT * 0.74);
+  const nameSize = cfg.nameFontSize || 72;
+  ctx.font = `normal ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
+  ctx.fillStyle = cfg.nameColor || '#FFFFFF';
+  ctx.letterSpacing = `${cfg.nameLetterSpacing ?? 1}px`;
+  const nameYPos = CARD_HEIGHT * (cfg.nameY ?? 0.74);
+  ctx.fillText(nameText, CARD_WIDTH / 2, nameYPos);
 
-  // Designation in Poppins Italics
-  const desigText = `“ ${member.designation || 'E-Cell Team'} ”`;
-  ctx.font = 'italic 32px "Poppins", sans-serif';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillText(desigText, CARD_WIDTH / 2, CARD_HEIGHT * 0.83);
+  // 4B. DESIGNATION
+  const rawDesig = member.designation || 'Creative Designing';
+  const desigText = cfg.desigQuotes !== false ? `“ ${rawDesig} ”` : rawDesig;
+  const desigSize = cfg.desigFontSize || 32;
+  ctx.font = `italic ${desigSize}px "Poppins", sans-serif`;
+  ctx.fillStyle = cfg.desigColor || '#FFFFFF';
+  ctx.letterSpacing = `${cfg.desigLetterSpacing ?? 0}px`;
+  const desigYPos = CARD_HEIGHT * (cfg.desigY ?? 0.83);
+  ctx.fillText(desigText, CARD_WIDTH / 2, desigYPos);
 
   ctx.restore();
   return canvas;
