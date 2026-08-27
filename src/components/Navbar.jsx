@@ -1,89 +1,186 @@
 import React from 'react';
 import { Users, Clock, Printer, ShieldCheck, UserCheck, Plus, FileSpreadsheet, Sliders } from 'lucide-react';
 
+const styles = {
+  header: {
+    background: '#ffffff',
+    borderBottom: '1px solid #e2e8f0',
+    position: 'sticky',
+    top: 0,
+    zIndex: 40,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.07)'
+  },
+  inner: {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: '0 20px',
+    display: 'flex',
+    alignItems: 'center',
+    height: '60px',
+    gap: '12px'
+  },
+  brand: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexShrink: 0
+  },
+  logoBox: {
+    width: '38px',
+    height: '38px',
+    background: '#1d4ed8',
+    borderRadius: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#fff',
+    fontFamily: "'Bebas Neue', sans-serif",
+    fontSize: '20px',
+    letterSpacing: '1px',
+    boxShadow: '0 2px 6px rgba(29,78,216,0.35)',
+    flexShrink: 0
+  },
+  brandName: {
+    fontWeight: 800,
+    fontSize: '16px',
+    color: '#0f172a',
+    letterSpacing: '-0.3px',
+    lineHeight: 1.2
+  },
+  brandSub: {
+    fontSize: '10px',
+    color: '#64748b',
+    fontWeight: 500,
+    lineHeight: 1.2
+  },
+  badge: {
+    background: '#eff6ff',
+    color: '#1d4ed8',
+    border: '1px solid #bfdbfe',
+    borderRadius: '4px',
+    fontSize: '10px',
+    fontWeight: 700,
+    padding: '1px 6px',
+    marginLeft: '6px',
+    verticalAlign: 'middle'
+  },
+  nav: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '2px',
+    flex: 1,
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none'
+  },
+  actions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexShrink: 0
+  }
+};
+
 export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, onOpenBulkModal }) {
   const tabs = [
     { id: 'members', label: 'All Members', icon: Users },
-    { id: 'template-studio', label: 'Card Design Layout', icon: Sliders },
-    { id: 'batches', label: 'Batch Edits & Links', icon: Clock },
+    { id: 'template-studio', label: 'Card Design', icon: Sliders },
+    { id: 'batches', label: 'Batch Edits', icon: Clock },
     { id: 'export', label: 'Print & Export', icon: Printer },
-    { id: 'verify', label: 'Public Verify Portal', icon: ShieldCheck },
-    { id: 'edit-portal', label: 'Public Self-Edit', icon: UserCheck }
+    { id: 'verify', label: 'Verify Portal', icon: ShieldCheck },
+    { id: 'edit-portal', label: 'Self-Edit', icon: UserCheck }
   ];
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
-          
-          {/* Brand Logo & College Title */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bebas text-white text-xl shadow-md tracking-wider">
-              EC
-            </div>
+    <header style={styles.header}>
+      <div style={styles.inner}>
+
+        {/* Brand */}
+        <div style={styles.brand}>
+          <div style={styles.logoBox}>EC</div>
+          <div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-slate-900 text-lg tracking-tight">CARD-GEN</span>
-                <span className="hero-badge hero-badge-blue text-[10px]">E-CELL V3</span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium leading-none">I.T.S Engineering College</p>
+              <span style={styles.brandName}>CARD-GEN</span>
+              <span style={styles.badge}>E-CELL V3</span>
             </div>
-          </div>
-
-          {/* Nav Tabs Bar */}
-          <nav className="hidden xl:flex items-center gap-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Right Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={onOpenAddModal} className="hero-btn hero-btn-primary text-xs py-2 px-3">
-              <Plus className="w-4 h-4" /> <span>Add Member</span>
-            </button>
-            <button onClick={onOpenBulkModal} className="hero-btn hero-btn-secondary text-xs py-2 px-3">
-              <FileSpreadsheet className="w-4 h-4 text-green-600" /> <span>Bulk CSV</span>
-            </button>
+            <div style={styles.brandSub}>I.T.S Engineering College</div>
           </div>
         </div>
 
-        {/* Secondary Navigation Row for Mid-size screens */}
-        <div className="xl:hidden flex items-center gap-1 py-2 border-t border-slate-100 overflow-x-auto text-xs scrollbar-none">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+        {/* Nav Tabs — single row, no duplication */}
+        <nav style={styles.nav}>
+          {tabs.map(({ id, label, icon: Icon }) => {
+            const isActive = activeTab === id;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-600 bg-slate-100 hover:bg-slate-200'
-                }`}
+                key={id}
+                onClick={() => setActiveTab(id)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  border: isActive ? '1px solid #bfdbfe' : '1px solid transparent',
+                  background: isActive ? '#eff6ff' : 'transparent',
+                  color: isActive ? '#1d4ed8' : '#475569',
+                  transition: 'all 0.15s'
+                }}
               >
-                <Icon className="w-3.5 h-3.5" />
-                {tab.label}
+                <Icon style={{ width: 14, height: 14, color: isActive ? '#1d4ed8' : '#94a3b8', flexShrink: 0 }} />
+                {label}
               </button>
             );
           })}
+        </nav>
+
+        {/* Action Buttons */}
+        <div style={styles.actions}>
+          <button
+            onClick={onOpenAddModal}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '7px 14px',
+              background: '#1d4ed8',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 6px rgba(29,78,216,0.3)'
+            }}
+          >
+            <Plus style={{ width: 14, height: 14 }} /> Add Member
+          </button>
+          <button
+            onClick={onOpenBulkModal}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '7px 14px',
+              background: '#f8fafc',
+              color: '#374151',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <FileSpreadsheet style={{ width: 14, height: 14, color: '#16a34a' }} /> Bulk CSV
+          </button>
         </div>
+
       </div>
     </header>
   );
