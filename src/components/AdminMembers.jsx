@@ -162,8 +162,8 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
                   <Trash2 style={{ width: 15, height: 15 }} />
                 </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
