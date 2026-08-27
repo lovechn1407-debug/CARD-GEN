@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import { getTemplateConfig, saveTemplateConfig, DEFAULT_TEMPLATE_CONFIG } from '../utils/storage';
-import { Sliders, Type, Layers, Eye, EyeOff, Save, RotateCcw, Sparkles, Check } from 'lucide-react';
+import { Sliders, Type, Layers, Eye, EyeOff, Save, RotateCcw, Check } from 'lucide-react';
 
 export default function AdminTemplateStudio({ members, onConfigSaved }) {
   const [config, setConfig] = useState(getTemplateConfig());
@@ -31,35 +31,36 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Studio Header */}
-      <div className="hero-card p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="space-y-4 max-w-7xl mx-auto">
+      {/* Compact Studio Header */}
+      <div className="hero-card p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-blue-600" /> Global Card Design & Layout Studio
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-blue-600" /> Card Design & Layout Studio
           </h3>
-          <p className="text-xs text-slate-600 mt-1 max-w-2xl">
-            Customize typography positions, font sizes, text letter spacing, black fade height, and enable the Reference Card Guide Overlay for 100% pixel-perfect card alignment.
+          <p className="text-xs text-slate-500">
+            Adjust typography positions, font sizes, text letter spacing, and overlay start height live.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button onClick={handleReset} className="hero-btn hero-btn-secondary text-xs">
-            <RotateCcw className="w-4 h-4" /> Reset Defaults
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={handleReset} className="hero-btn hero-btn-secondary text-xs py-1.5 px-3">
+            <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
           </button>
-          <button onClick={handleSave} className="hero-btn hero-btn-primary text-xs">
-            {savedSuccess ? <Check className="w-4 h-4 text-green-300" /> : <Save className="w-4 h-4" />}
-            {savedSuccess ? 'Layout Saved!' : 'Save Layout Settings'}
+          <button onClick={handleSave} className="hero-btn hero-btn-primary text-xs py-1.5 px-3">
+            {savedSuccess ? <Check className="w-3.5 h-3.5 text-green-300" /> : <Save className="w-3.5 h-3.5" />}
+            {savedSuccess ? 'Saved!' : 'Save Layout'}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Live Canvas Preview */}
-        <div className="lg:col-span-5 flex flex-col items-center">
-          <div className="hero-card p-5 w-full flex flex-col items-center space-y-4 bg-slate-900/5">
-            <div className="flex items-center justify-between w-full text-xs font-semibold text-slate-700 pb-2 border-b border-slate-200">
-              <span>Live Card Layout Preview</span>
+      {/* Side-by-Side 2-Column Studio Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN: Sticky Compact Card Preview (Max-Width 260px, fits completely on screen without scrolling!) */}
+        <div className="md:col-span-4 sticky top-20 flex flex-col items-center">
+          <div className="hero-card p-4 w-full flex flex-col items-center space-y-3 bg-slate-900/5">
+            <div className="flex items-center justify-between w-full text-xs font-semibold text-slate-700">
+              <span>Card Preview</span>
               <select
                 value={selectedMemberIndex}
                 onChange={(e) => setSelectedMemberIndex(parseInt(e.target.value))}
@@ -67,13 +68,14 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
               >
                 {members.map((m, idx) => (
                   <option key={m.id} value={idx}>
-                    Preview: {m.name}
+                    {m.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="w-full max-w-[340px] shadow-2xl rounded-xl overflow-hidden">
+            {/* Compact ID Card Container */}
+            <div className="w-full max-w-[260px] shadow-xl rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
               <IDCardCanvas
                 member={sampleMember}
                 interactive={false}
@@ -83,43 +85,43 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
             </div>
 
             <p className="text-[11px] text-slate-500 text-center">
-              All member cards, batch self-edits, PDF prints, and ZIP downloads will use this exact layout!
+              Target ID Card Size: 2.125" × 3.375" (Portrait)
             </p>
           </div>
         </div>
 
-        {/* Right Layout Controls Panel */}
-        <div className="lg:col-span-7 space-y-6">
+        {/* RIGHT COLUMN: Edit Controls Panel */}
+        <div className="md:col-span-8 space-y-4">
           {/* Reference Overlay Guide Toggle */}
-          <div className="hero-card p-5 border-amber-200 bg-amber-50/40 space-y-4">
+          <div className="hero-card p-4 border-amber-200 bg-amber-50/40 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {config.showRefGuide ? (
-                  <Eye className="w-5 h-5 text-amber-600" />
+                  <Eye className="w-4 h-4 text-amber-600" />
                 ) : (
-                  <EyeOff className="w-5 h-5 text-slate-400" />
+                  <EyeOff className="w-4 h-4 text-slate-400" />
                 )}
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">Reference ID Card Overlay Guide</h4>
-                  <p className="text-xs text-slate-500">Overlays original target card guide to align text & photos</p>
+                  <h4 className="text-xs font-bold text-slate-900">Reference ID Card Overlay Guide</h4>
+                  <p className="text-[11px] text-slate-500">Overlay target image guide to check pixel alignment</p>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setConfig({ ...config, showRefGuide: !config.showRefGuide })}
-                className={`hero-btn hero-btn-xs text-xs py-1.5 px-3 ${
+                className={`hero-btn text-xs py-1 px-2.5 ${
                   config.showRefGuide ? 'hero-btn-primary bg-amber-600 hover:bg-amber-700' : 'hero-btn-secondary'
                 }`}
               >
-                {config.showRefGuide ? 'Guide Enabled' : 'Enable Guide'}
+                {config.showRefGuide ? 'Guide On' : 'Guide Off'}
               </button>
             </div>
 
             {config.showRefGuide && (
-              <div className="pt-2 border-t border-amber-200 space-y-2">
-                <div className="flex justify-between text-xs text-slate-700 font-semibold">
-                  <span>Reference Guide Transparency</span>
+              <div className="pt-2 border-t border-amber-200 space-y-1">
+                <div className="flex justify-between text-xs text-slate-700 font-medium">
+                  <span>Guide Opacity</span>
                   <span>{Math.round(config.refGuideOpacity * 100)}%</span>
                 </div>
                 <input
@@ -135,17 +137,16 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
             )}
           </div>
 
-          {/* Name Text Controls */}
-          <div className="hero-card p-5 space-y-4">
-            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2 font-bebas text-lg tracking-wide">
+          {/* Member Name Controls */}
+          <div className="hero-card p-4 space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
               <Type className="w-4 h-4 text-blue-600" /> Member Name Controls (Bebas Neue)
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Name Y Position */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-700 font-semibold">
-                  <span>Vertical Position (Y)</span>
+                <div className="flex justify-between text-slate-700 font-medium">
+                  <span>Vertical Y Position</span>
                   <span>{Math.round(config.nameY * 100)}%</span>
                 </div>
                 <input
@@ -159,10 +160,9 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                 />
               </div>
 
-              {/* Name Font Size */}
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-700 font-semibold">
-                  <span>Font Size (Zoom)</span>
+                <div className="flex justify-between text-slate-700 font-medium">
+                  <span>Font Size</span>
                   <span>{config.nameFontSize}px</span>
                 </div>
                 <input
@@ -176,10 +176,9 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                 />
               </div>
 
-              {/* Name Letter Spacing */}
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-700 font-semibold">
-                  <span>Text / Letter Spacing</span>
+                <div className="flex justify-between text-slate-700 font-medium">
+                  <span>Letter / Text Spacing</span>
                   <span>{config.nameLetterSpacing}px</span>
                 </div>
                 <input
@@ -193,30 +192,28 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                 />
               </div>
 
-              {/* Name Color */}
               <div className="space-y-1">
-                <label className="block text-xs text-slate-700 font-semibold mb-1">Text Color</label>
+                <label className="block text-slate-700 font-medium mb-1">Text Color</label>
                 <input
                   type="color"
                   value={config.nameColor}
                   onChange={(e) => setConfig({ ...config, nameColor: e.target.value })}
-                  className="h-8 w-full rounded-md border border-slate-300 cursor-pointer"
+                  className="h-7 w-full rounded-md border border-slate-300 cursor-pointer"
                 />
               </div>
             </div>
           </div>
 
-          {/* Designation Text Controls */}
-          <div className="hero-card p-5 space-y-4">
-            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2 font-poppins italic">
+          {/* Designation Controls */}
+          <div className="hero-card p-4 space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
               <Type className="w-4 h-4 text-purple-600" /> Designation Controls (Poppins Italics)
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Designation Y Position */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-700 font-semibold">
-                  <span>Vertical Position (Y)</span>
+                <div className="flex justify-between text-slate-700 font-medium">
+                  <span>Vertical Y Position</span>
                   <span>{Math.round(config.desigY * 100)}%</span>
                 </div>
                 <input
@@ -230,10 +227,9 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                 />
               </div>
 
-              {/* Designation Font Size */}
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-700 font-semibold">
-                  <span>Font Size (Zoom)</span>
+                <div className="flex justify-between text-slate-700 font-medium">
+                  <span>Font Size</span>
                   <span>{config.desigFontSize}px</span>
                 </div>
                 <input
@@ -247,10 +243,9 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                 />
               </div>
 
-              {/* Designation Letter Spacing */}
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-700 font-semibold">
-                  <span>Text / Letter Spacing</span>
+                <div className="flex justify-between text-slate-700 font-medium">
+                  <span>Letter / Text Spacing</span>
                   <span>{config.desigLetterSpacing}px</span>
                 </div>
                 <input
@@ -264,28 +259,27 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                 />
               </div>
 
-              {/* Designation Color */}
               <div className="space-y-1">
-                <label className="block text-xs text-slate-700 font-semibold mb-1">Text Color</label>
+                <label className="block text-slate-700 font-medium mb-1">Text Color</label>
                 <input
                   type="color"
                   value={config.desigColor}
                   onChange={(e) => setConfig({ ...config, desigColor: e.target.value })}
-                  className="h-8 w-full rounded-md border border-slate-300 cursor-pointer"
+                  className="h-7 w-full rounded-md border border-slate-300 cursor-pointer"
                 />
               </div>
             </div>
           </div>
 
-          {/* Black Overlay Repositioning Controls */}
-          <div className="hero-card p-5 space-y-4">
-            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2">
-              <Layers className="w-4 h-4 text-slate-700" /> Black Fade Overlay Repositioning
+          {/* Black Fade Overlay Controls */}
+          <div className="hero-card p-4 space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
+              <Layers className="w-4 h-4 text-slate-700" /> Black Fade Overlay Position
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-700 font-semibold">
+                <div className="flex justify-between text-slate-700 font-medium">
                   <span>Fade Start Height (Y Position)</span>
                   <span>{Math.round(config.fadeStartY * 100)}%</span>
                 </div>
@@ -301,8 +295,8 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
               </div>
 
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-700 font-semibold">
-                  <span>Global Fade Opacity</span>
+                <div className="flex justify-between text-slate-700 font-medium">
+                  <span>Overlay Transparency</span>
                   <span>{Math.round(config.fadeOpacity * 100)}%</span>
                 </div>
                 <input
