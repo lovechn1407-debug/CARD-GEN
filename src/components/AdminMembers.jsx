@@ -95,9 +95,15 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)'}
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
             >
-              {/* 3D Flippable Card Canvas */}
+              {/* 3D Flippable Card Canvas with Hover Overlay */}
               <div style={{ position: 'relative' }}>
-                <FlippableIDCard member={member} interactive={false} overlayOpacity={1.0} showFlipButton={true} />
+                <FlippableIDCard
+                  member={member}
+                  interactive={false}
+                  overlayOpacity={1.0}
+                  showFlipButton={false}
+                  onModifyClick={() => setEditingMember(member)}
+                />
               </div>
 
               {/* Member Info */}

@@ -169,6 +169,13 @@ export async function renderMemberCardBackCanvas(member) {
   const ctx = canvas.getContext('2d');
   const cfg = getTemplateConfig();
 
+  let backBgImg = null;
+  try {
+    backBgImg = await loadImage('/card_back.png');
+  } catch (e) {
+    try { backBgImg = await loadImage('card_back.png'); } catch (err) {}
+  }
+
   // 1. Generate QR Code
   const rollNo = member?.collegeRollNo || member?.id || '2100290130085';
   const verifyUrl = `${window.location.origin}${window.location.pathname}#/verify?id=${encodeURIComponent(rollNo)}`;
@@ -191,149 +198,79 @@ export async function renderMemberCardBackCanvas(member) {
     try { await document.fonts.ready; } catch (e) {}
   }
 
-  // 3. Render Background Gradient
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
-  bgGrad.addColorStop(0, '#060a28');
-  bgGrad.addColorStop(0.3, '#0b133b');
-  bgGrad.addColorStop(1, '#050920');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+  ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  // Top Bar Divider
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.fillRect(0, 80, CARD_WIDTH, 2);
+  // 3. Render Background Image Template
+  if (backBgImg) {
+    ctx.drawImage(backBgImg, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+  } else {
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
+    bgGrad.addColorStop(0, '#060a28');
+    bgGrad.addColorStop(0.3, '#0b133b');
+    bgGrad.addColorStop(1, '#050920');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+  }
 
-  // 4. QR Code Container Box
-  const qrBoxX = 40;
+  // 4. QR CODE OVERLAY
+  const qrBoxX = 42;
   const qrBoxY = 140;
   const qrBoxSize = 195;
 
-  ctx.save();
-  ctx.fillStyle = '#FFFFFF';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-  ctx.shadowBlur = 12;
-  ctx.shadowOffsetY = 4;
-  ctx.beginPath();
-  ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 12);
-  ctx.fill();
-  ctx.restore();
-
   if (qrImg) {
+    ctx.save();
     ctx.drawImage(qrImg, qrBoxX + 10, qrBoxY + 10, qrBoxSize - 20, qrBoxSize - 20);
+    ctx.restore();
   }
 
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 15px "Inter", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.letterSpacing = '1px';
-  ctx.fillText('VERIFICATION QR', qrBoxX + qrBoxSize / 2, qrBoxY + qrBoxSize + 32);
-
-  // 5. Right Info Column
-  const infoX = 275;
-  let infoY = 165;
-
-  ctx.font = '22px sans-serif';
+  // 5. MEMBER METADATA NEXT TO ICONS
+  const infoX = 315;
   ctx.textAlign = 'left';
-  ctx.fillText('📞', infoX, infoY);
-  ctx.font = '600 23px "Inter", sans-serif';
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillText(member?.phone || '8383090874', infoX + 42, infoY - 2);
-
-  infoY += 55;
-  ctx.font = '22px sans-serif';
-  ctx.fillText('💧', infoX, infoY);
   ctx.font = '600 23px "Inter", sans-serif';
-  ctx.fillStyle = '#FFFFFF';
-  const bloodTxt = member?.bloodGroup ? (member.bloodGroup.includes('+') || member.bloodGroup.includes('-') ? member.bloodGroup : `${member.bloodGroup} +ve`) : 'B +ve';
-  ctx.fillText(bloodTxt, infoX + 42, infoY - 2);
 
-  infoY += 55;
-  ctx.font = '22px sans-serif';
-  ctx.fillText('🛡️', infoX, infoY);
-  ctx.font = '600 23px "Inter", sans-serif';
-  ctx.fillStyle = '#FFFFFF';
-  const validTxt = member?.validTill ? (member.validTill.toUpperCase().includes('SEPT') ? member.validTill : `SEPT ${new Date(member.validTill).getFullYear() || 2029}`) : 'SEPT 2029';
-  ctx.fillText(validTxt, infoX + 42, infoY - 2);
+  // Phone
+  ctx.fillText(member?.phone || '8383090874', infoX, 194);
 
-  // 6. Separator Line
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(40, 425);
-  ctx.lineTo(CARD_WIDTH - 40, 425);
-  ctx.stroke();
+  // Blood Group
+  const bloodTxt = member?.bloodGroup
+    ? (member.bloodGroup.includes('+') || member.bloodGroup.includes('-') ? member.bloodGroup : `${member.bloodGroup} +ve`)
+    : 'B +ve';
+  ctx.fillText(bloodTxt, infoX, 250);
 
-  // 7. Terms Paragraphs
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-  ctx.font = '400 21px "Inter", system-ui, sans-serif';
-  ctx.textAlign = 'left';
+  // Valid Till
+  const validTxt = member?.validTill
+    ? (member.validTill.toUpperCase().includes('SEPT') ? member.validTill : `SEPT ${new Date(member.validTill).getFullYear() || 2029}`)
+    : 'SEPT 2029';
+  ctx.fillText(validTxt, infoX, 306);
 
-  const wrapText = (text, x, startY, maxWidth, lineHeight) => {
-    const words = text.split(' ');
-    let line = '';
-    let currentY = startY;
-    for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      if (ctx.measureText(testLine).width > maxWidth && n > 0) {
-        ctx.fillText(line, x, currentY);
-        line = words[n] + ' ';
-        currentY += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, x, currentY);
-    return currentY + lineHeight;
-  };
-
-  let pY = 475;
-  pY = wrapText('This card certifies that the holder is a registered Member/Head of E-Cell @ I.T.S ENGINEERIGN COLLEGE GREATER NOIDA.', 40, pY, CARD_WIDTH - 80, 32) + 16;
-  pY = wrapText('The holder must produce this card upon request by campus security or library staff. Misuse of this card will result in disciplinary action.', 40, pY, CARD_WIDTH - 80, 32) + 16;
-  pY = wrapText('If Found: Please drop this card into a mailbox or return it to the Student Services Office at NewGen ITSEC, Knowledge Park III Greater Noida.', 40, pY, CARD_WIDTH - 80, 32);
-
-  // 8. Footer Row
-  const footerY = 935;
+  // 6. PRINT DATE TIMESTAMP
   const now = new Date();
   const dateStr = `${now.getDate().toString().padStart(2, '0')}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
+  
   ctx.textAlign = 'left';
-  ctx.font = '18px "Inter", monospace';
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-  ctx.fillText(dateStr, 40, footerY - 24);
-  ctx.font = 'bold 15px "Inter", sans-serif';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillText('PRINT DATE', 40, footerY);
+  ctx.font = '17px "Inter", monospace';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.fillText(dateStr, 36, 922);
 
-  ctx.textAlign = 'center';
-  ctx.font = 'bold 16px "Inter", sans-serif';
-  ctx.fillStyle = '#a855f7';
-  ctx.fillText('A', CARD_WIDTH / 2 - 48, footerY);
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillText('AS STUDIOS', CARD_WIDTH / 2 + 6, footerY);
-
+  // 7. DIRECTOR SIGNATURE
   const rightX = CARD_WIDTH - 40;
-  ctx.textAlign = 'right';
-
   if (directorSignImg) {
     const signW = 120;
     const signH = (signW * directorSignImg.height) / directorSignImg.width;
-    ctx.drawImage(directorSignImg, rightX - signW, footerY - 55 - signH, signW, signH);
+    ctx.drawImage(directorSignImg, rightX - signW, 925 - signH, signW, signH);
   } else {
     ctx.save();
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(rightX - 110, footerY - 45);
-    ctx.bezierCurveTo(rightX - 90, footerY - 75, rightX - 70, footerY - 25, rightX - 50, footerY - 55);
-    ctx.bezierCurveTo(rightX - 40, footerY - 70, rightX - 30, footerY - 35, rightX - 10, footerY - 50);
+    ctx.moveTo(rightX - 110, 890);
+    ctx.bezierCurveTo(rightX - 90, 860, rightX - 70, 910, rightX - 50, 880);
+    ctx.bezierCurveTo(rightX - 40, 865, rightX - 30, 900, rightX - 10, 885);
     ctx.stroke();
     ctx.restore();
   }
-
-  ctx.font = 'bold 15px "Inter", sans-serif';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillText('DIRECTOR', rightX, footerY);
 
   return canvas;
 }
