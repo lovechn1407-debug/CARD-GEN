@@ -1,5 +1,6 @@
 import React from 'react';
-import { Users, Clock, Printer, ShieldCheck, UserCheck, Plus, FileSpreadsheet, Sliders } from 'lucide-react';
+import { Users, Clock, Printer, ShieldCheck, UserCheck, Plus, FileSpreadsheet, Sliders, LogIn, LogOut, CheckCircle2 } from 'lucide-react';
+import { loginWithGoogle, logoutUser } from '../utils/firebase';
 
 const styles = {
   header: {
@@ -81,7 +82,7 @@ const styles = {
   }
 };
 
-export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, onOpenBulkModal }) {
+export default function Navbar({ activeTab, setActiveTab, user, onOpenAddModal, onOpenBulkModal }) {
   const tabs = [
     { id: 'members', label: 'All Members', icon: Users },
     { id: 'template-studio', label: 'Card Design', icon: Sliders },
@@ -90,6 +91,14 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, onOpen
     { id: 'verify', label: 'Verify Portal', icon: ShieldCheck },
     { id: 'edit-portal', label: 'Self-Edit', icon: UserCheck }
   ];
+
+  const handleGoogleAuth = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (e) {
+      alert("Google Sign-In failed or was cancelled.");
+    }
+  };
 
   return (
     <header style={styles.header}>
@@ -101,13 +110,13 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, onOpen
           <div>
             <div>
               <span style={styles.brandName}>CARD-GEN</span>
-              <span style={styles.badge}>E-CELL V3</span>
+              <span style={styles.badge}>FIREBASE</span>
             </div>
             <div style={styles.brandSub}>I.T.S Engineering College</div>
           </div>
         </div>
 
-        {/* Nav Tabs — single row, no duplication */}
+        {/* Nav Tabs */}
         <nav style={styles.nav}>
           {tabs.map(({ id, label, icon: Icon }) => {
             const isActive = activeTab === id;
@@ -138,8 +147,50 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, onOpen
           })}
         </nav>
 
-        {/* Action Buttons */}
+        {/* Action Buttons & Firebase Google Auth */}
         <div style={styles.actions}>
+
+          {/* Google Auth Status */}
+          {user && !user.isAnonymous ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 8px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="Avatar" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <CheckCircle2 style={{ width: 16, height: 16, color: '#16a34a' }} />
+              )}
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#15803d', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.displayName || user.email}
+              </span>
+              <button
+                onClick={logoutUser}
+                title="Sign Out"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#94a3b8' }}
+              >
+                <LogOut style={{ width: 13, height: 13 }} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleGoogleAuth}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 12px',
+                background: '#fff',
+                color: '#334155',
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <LogIn style={{ width: 13, height: 13, color: '#1d4ed8' }} /> Admin Google Login
+            </button>
+          )}
+
           <button
             onClick={onOpenAddModal}
             style={{

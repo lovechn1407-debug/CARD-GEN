@@ -8,51 +8,61 @@ import PublicVerifyPortal from './components/PublicVerifyPortal';
 import PublicEditPortal from './components/PublicEditPortal';
 import AddMemberModal from './components/AddMemberModal';
 import BulkCsvModal from './components/BulkCsvModal';
-import { getMembers, saveMembers, getBatches, saveBatches, updateMember, deleteMember } from './utils/storage';
+import { 
+  subscribeMembers, 
+  subscribeBatches, 
+  saveMembers, 
+  saveBatches, 
+  updateMember, 
+  deleteMember 
+} from './utils/storage';
+import { subscribeToAuth } from './utils/firebase';
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
   const [activeTab, setActiveTab] = useState('members');
 
-  const [members, setMembersState] = useState([]);
-  const [batches, setBatchesState] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [user, setUser] = useState(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
 
-  const refreshData = () => {
-    setMembersState(getMembers());
-    setBatchesState(getBatches());
-  };
-
   useEffect(() => {
-    refreshData();
+    // 1. Subscribe to Firebase Auth
+    const unsubAuth = subscribeToAuth((u) => setUser(u));
+
+    // 2. Real-time Firestore Subscriptions (Sync across all devices)
+    const unsubMembers = subscribeMembers((list) => setMembers(list));
+    const unsubBatches = subscribeBatches((list) => setBatches(list));
+
     const handleHashChange = () => setCurrentRoute(window.location.hash || '#/');
     window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+
+    return () => {
+      unsubAuth();
+      unsubMembers();
+      unsubBatches();
+      window.removeEventListener('hashchange', handleHashChange);
+    };
   }, []);
 
-  const handleAddMember = (newMember) => {
-    const updated = updateMember(newMember);
-    setMembersState(updated);
+  const handleAddMember = async (newMember) => {
+    await updateMember(newMember);
   };
 
-  const handleImportBatch = (newMembers, newBatch) => {
-    const currentM = getMembers();
-    saveMembers([...currentM, ...newMembers]);
-    const currentB = getBatches();
-    saveBatches([newBatch, ...currentB]);
-    refreshData();
+  const handleImportBatch = async (newMembers, newBatch) => {
+    await saveMembers([...members, ...newMembers]);
+    await saveBatches([newBatch, ...batches]);
   };
 
-  const handleUpdateMember = (updatedMember) => {
-    const updated = updateMember(updatedMember);
-    setMembersState(updated);
+  const handleUpdateMember = async (updatedMember) => {
+    await updateMember(updatedMember);
   };
 
-  const handleDeleteMember = (id) => {
-    const updated = deleteMember(id);
-    setMembersState(updated);
+  const handleDeleteMember = async (id) => {
+    await deleteMember(id);
   };
 
   if (currentRoute.startsWith('#/verify')) return <PublicVerifyPortal />;
@@ -63,11 +73,12 @@ export default function App() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        user={user}
         onOpenAddModal={() => setShowAddModal(true)}
         onOpenBulkModal={() => setShowBulkModal(true)}
       />
 
-      <main style={{ flex: 1, maxWidth: '1280px', margin: '0 auto', width: '100%', padding: '32px 20px' }}>
+      <main style={{ flex: 1, maxWidth: '1280px', margin: '0 auto', width: '100%', padding: '32px 20px', boxSizing: 'border-box' }}>
         {activeTab === 'members' && (
           <AdminMembers
             members={members}
@@ -79,10 +90,10 @@ export default function App() {
           />
         )}
         {activeTab === 'template-studio' && (
-          <AdminTemplateStudio members={members} onConfigSaved={() => refreshData()} />
+          <AdminTemplateStudio members={members} />
         )}
         {activeTab === 'batches' && (
-          <AdminBatchEdits batches={batches} members={members} onBatchUpdated={refreshData} />
+          <AdminBatchEdits batches={batches} members={members} />
         )}
         {activeTab === 'export' && (
           <AdminExport members={members} batches={batches} />
@@ -94,13 +105,11 @@ export default function App() {
       <footer style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '20px', marginTop: 'auto' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '12px', color: '#64748b' }}>
           <div>
-            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Entrepreneurship Cell, I.T.S Engineering College
+            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Firebase Realtime Cloud Connected
           </div>
           <div>
-            Design Layout:{' '}
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", color: '#334155', fontSize: '14px' }}>BEBAS NEUE</span>
-            {' & '}
-            <span style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', color: '#334155' }}>Poppins</span>
+            Database:{' '}
+            <span style={{ fontWeight: 700, color: '#16a34a' }}>Firebase Firestore & Auth Active</span>
           </div>
         </div>
       </footer>

@@ -1,4 +1,15 @@
-// Local Storage Manager for CARD-GEN
+// Firebase Firestore Data Manager for CARD-GEN
+import { db, ensureAnonymousAuth } from './firebase';
+import { 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  onSnapshot 
+} from "firebase/firestore";
 
 const MEMBERS_KEY = 'ecell_id_members_v1';
 const BATCHES_KEY = 'ecell_id_batches_v1';
@@ -35,21 +46,7 @@ export const DEFAULT_TEMPLATE_CONFIG = {
   backSignWidth: 120         // Director Signature Width/Size in px
 };
 
-export function getTemplateConfig() {
-  const data = localStorage.getItem(TEMPLATE_CONFIG_KEY);
-  if (!data) return DEFAULT_TEMPLATE_CONFIG;
-  try {
-    return { ...DEFAULT_TEMPLATE_CONFIG, ...JSON.parse(data) };
-  } catch (e) {
-    return DEFAULT_TEMPLATE_CONFIG;
-  }
-}
-
-export function saveTemplateConfig(config) {
-  localStorage.setItem(TEMPLATE_CONFIG_KEY, JSON.stringify(config));
-}
-
-// Sample initial member data with reliable working portrait photos
+// Initial default member records
 const DEFAULT_MEMBERS = [
   {
     id: 'ECELL2026-001',
@@ -79,129 +76,291 @@ const DEFAULT_MEMBERS = [
   }
 ];
 
-export function getMembers() {
-  const data = localStorage.getItem(MEMBERS_KEY);
-  if (!data) {
-    localStorage.setItem(MEMBERS_KEY, JSON.stringify(DEFAULT_MEMBERS));
-    return DEFAULT_MEMBERS;
+const DEFAULT_BATCHES = [
+  {
+    batchId: 'BATCH-DEFAULT-2026',
+    name: 'Initial Team Batch 2026',
+    createdAt: new Date().toISOString(),
+    memberCount: 2,
+    isPublic: true,
+    publicToken: 'ecell-batch-2026-token'
   }
-  try {
-    const parsed = JSON.parse(data);
-    // Auto-fix broken imgur URLs in stored local data if present
-    const fixed = parsed.map(m => {
-      if (m.photoUrl && m.photoUrl.includes('imgur')) {
-        return { ...m, photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80' };
-      }
-      return m;
+];
+
+// In-Memory Cache
+let cachedMembers = [...DEFAULT_MEMBERS];
+let cachedBatches = [...DEFAULT_BATCHES];
+let cachedEdits = [];
+let cachedConfig = { ...DEFAULT_TEMPLATE_CONFIG };
+
+// -------------------------------------------------------------
+// REAL-TIME FIRESTORE SUBSCRIPTIONS (Cross-Device Realtime Sync)
+// -------------------------------------------------------------
+
+export function subscribeMembers(callback) {
+  ensureAnonymousAuth();
+  const membersRef = collection(db, "members");
+  return onSnapshot(membersRef, (snapshot) => {
+    if (snapshot.empty) {
+      // Auto seed Firestore if empty
+      seedFirestoreData();
+      return;
+    }
+    const list = [];
+    snapshot.forEach((docSnap) => {
+      list.push({ id: docSnap.id, ...docSnap.data() });
     });
-    return fixed;
-  } catch (e) {
-    return DEFAULT_MEMBERS;
+    cachedMembers = list;
+    localStorage.setItem(MEMBERS_KEY, JSON.stringify(list));
+    callback(list);
+  }, (err) => {
+    console.warn("Firestore members subscription warning:", err);
+    callback(getMembersLocal());
+  });
+}
+
+export function subscribeBatches(callback) {
+  ensureAnonymousAuth();
+  const batchesRef = collection(db, "batches");
+  return onSnapshot(batchesRef, (snapshot) => {
+    if (snapshot.empty) {
+      callback(cachedBatches);
+      return;
+    }
+    const list = [];
+    snapshot.forEach((docSnap) => {
+      list.push({ batchId: docSnap.id, ...docSnap.data() });
+    });
+    cachedBatches = list;
+    localStorage.setItem(BATCHES_KEY, JSON.stringify(list));
+    callback(list);
+  }, (err) => {
+    console.warn("Firestore batches subscription warning:", err);
+    callback(getBatchesLocal());
+  });
+}
+
+export function subscribeBatchEdits(callback) {
+  ensureAnonymousAuth();
+  const editsRef = collection(db, "batch_edits");
+  return onSnapshot(editsRef, (snapshot) => {
+    const list = [];
+    snapshot.forEach((docSnap) => {
+      list.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    cachedEdits = list;
+    localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(list));
+    callback(list);
+  }, (err) => {
+    console.warn("Firestore edits subscription warning:", err);
+    callback(getBatchEditsLocal());
+  });
+}
+
+export function subscribeTemplateConfig(callback) {
+  ensureAnonymousAuth();
+  const configDocRef = doc(db, "config", "template_studio");
+  return onSnapshot(configDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = { ...DEFAULT_TEMPLATE_CONFIG, ...docSnap.data() };
+      cachedConfig = data;
+      localStorage.setItem(TEMPLATE_CONFIG_KEY, JSON.stringify(data));
+      callback(data);
+    } else {
+      // Seed default config doc
+      setDoc(configDocRef, DEFAULT_TEMPLATE_CONFIG).catch(() => {});
+      callback(cachedConfig);
+    }
+  }, (err) => {
+    console.warn("Firestore config subscription warning:", err);
+    callback(getTemplateConfigLocal());
+  });
+}
+
+// -------------------------------------------------------------
+// FIRESTORE READ & WRITE OPERATIONS
+// -------------------------------------------------------------
+
+export function getTemplateConfig() {
+  return cachedConfig;
+}
+
+export async function saveTemplateConfig(config) {
+  cachedConfig = config;
+  localStorage.setItem(TEMPLATE_CONFIG_KEY, JSON.stringify(config));
+  try {
+    await ensureAnonymousAuth();
+    await setDoc(doc(db, "config", "template_studio"), config);
+  } catch (err) {
+    console.error("Error saving template config to Firestore:", err);
   }
 }
 
-export function saveMembers(members) {
-  localStorage.setItem(MEMBERS_KEY, JSON.stringify(members));
+export function getMembers() {
+  return cachedMembers;
 }
 
 export function getMemberById(id) {
-  const members = getMembers();
-  return members.find(m => m.id === id || m.collegeRollNo === id);
+  return cachedMembers.find((m) => m.id === id || m.collegeRollNo === id);
 }
 
-export function updateMember(updatedMember) {
-  const members = getMembers();
-  const index = members.findIndex(m => m.id === updatedMember.id);
+export async function updateMember(updatedMember) {
+  const index = cachedMembers.findIndex((m) => m.id === updatedMember.id);
   if (index !== -1) {
-    members[index] = { ...members[index], ...updatedMember };
+    cachedMembers[index] = { ...cachedMembers[index], ...updatedMember };
   } else {
-    members.push(updatedMember);
+    cachedMembers.push(updatedMember);
   }
-  saveMembers(members);
-  return members;
+  localStorage.setItem(MEMBERS_KEY, JSON.stringify(cachedMembers));
+  try {
+    await ensureAnonymousAuth();
+    await setDoc(doc(db, "members", updatedMember.id), updatedMember);
+  } catch (err) {
+    console.error("Error updating member in Firestore:", err);
+  }
+  return cachedMembers;
 }
 
-export function deleteMember(id) {
-  const members = getMembers().filter(m => m.id !== id);
-  saveMembers(members);
-  return members;
+export async function saveMembers(membersList) {
+  cachedMembers = membersList;
+  localStorage.setItem(MEMBERS_KEY, JSON.stringify(membersList));
+  try {
+    await ensureAnonymousAuth();
+    for (const m of membersList) {
+      await setDoc(doc(db, "members", m.id), m);
+    }
+  } catch (err) {
+    console.error("Error saving members to Firestore:", err);
+  }
+}
+
+export async function deleteMember(id) {
+  cachedMembers = cachedMembers.filter((m) => m.id !== id);
+  localStorage.setItem(MEMBERS_KEY, JSON.stringify(cachedMembers));
+  try {
+    await ensureAnonymousAuth();
+    await deleteDoc(doc(db, "members", id));
+  } catch (err) {
+    console.error("Error deleting member in Firestore:", err);
+  }
+  return cachedMembers;
 }
 
 export function getBatches() {
-  const data = localStorage.getItem(BATCHES_KEY);
-  if (!data) {
-    const defaultBatch = [
-      {
-        batchId: 'BATCH-DEFAULT-2026',
-        name: 'Initial Team Batch 2026',
-        createdAt: new Date().toISOString(),
-        memberCount: 2,
-        isPublic: true,
-        publicToken: 'ecell-batch-2026-token'
-      }
-    ];
-    localStorage.setItem(BATCHES_KEY, JSON.stringify(defaultBatch));
-    return defaultBatch;
-  }
-  try {
-    return JSON.parse(data);
-  } catch (e) {
-    return [];
-  }
+  return cachedBatches;
 }
 
-export function saveBatches(batches) {
-  localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
+export async function saveBatches(batchesList) {
+  cachedBatches = batchesList;
+  localStorage.setItem(BATCHES_KEY, JSON.stringify(batchesList));
+  try {
+    await ensureAnonymousAuth();
+    for (const b of batchesList) {
+      await setDoc(doc(db, "batches", b.batchId), b);
+    }
+  } catch (err) {
+    console.error("Error saving batches to Firestore:", err);
+  }
 }
 
 export function getBatchEdits() {
-  const data = localStorage.getItem(BATCH_EDITS_KEY);
-  if (!data) return [];
-  try {
-    return JSON.parse(data);
-  } catch (e) {
-    return [];
-  }
+  return cachedEdits;
 }
 
-export function saveBatchEdit(editPayload) {
-  const edits = getBatchEdits();
-  const existingIndex = edits.findIndex(e => e.collegeRollNo === editPayload.collegeRollNo && e.batchId === editPayload.batchId);
+export async function saveBatchEdit(editPayload) {
+  const editId = `${editPayload.batchId}_${editPayload.collegeRollNo}`.replace(/[^a-zA-Z0-9_]/g, '_');
+  const existingIndex = cachedEdits.findIndex((e) => e.collegeRollNo === editPayload.collegeRollNo && e.batchId === editPayload.batchId);
   
+  let record;
   if (existingIndex !== -1) {
-    const prev = edits[existingIndex];
-    edits[existingIndex] = {
-      ...prev,
+    record = {
+      ...cachedEdits[existingIndex],
       ...editPayload,
-      editCount: (prev.editCount || 0) + 1,
+      editCount: (cachedEdits[existingIndex].editCount || 0) + 1,
       updatedAt: new Date().toISOString()
     };
+    cachedEdits[existingIndex] = record;
   } else {
-    edits.push({
+    record = {
       ...editPayload,
+      id: editId,
       editCount: 1,
       status: 'PENDING',
       updatedAt: new Date().toISOString()
-    });
+    };
+    cachedEdits.push(record);
   }
-  localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(edits));
-  return edits;
+  localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(cachedEdits));
+
+  try {
+    await ensureAnonymousAuth();
+    await setDoc(doc(db, "batch_edits", editId), record);
+  } catch (err) {
+    console.error("Error saving batch edit to Firestore:", err);
+  }
+  return cachedEdits;
 }
 
-export function approveBatchEdit(batchId, collegeRollNo) {
-  const edits = getBatchEdits();
-  const editItem = edits.find(e => e.batchId === batchId && e.collegeRollNo === collegeRollNo);
+export async function approveBatchEdit(batchId, collegeRollNo) {
+  const editId = `${batchId}_${collegeRollNo}`.replace(/[^a-zA-Z0-9_]/g, '_');
+  const editItem = cachedEdits.find((e) => e.batchId === batchId && e.collegeRollNo === collegeRollNo);
+  
   if (editItem) {
     editItem.status = 'CONFIRMED';
-    localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(edits));
+    localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(cachedEdits));
     
-    const members = getMembers();
-    const memberIndex = members.findIndex(m => m.collegeRollNo === collegeRollNo || m.id === editItem.memberId);
+    const memberIndex = cachedMembers.findIndex((m) => m.collegeRollNo === collegeRollNo || m.id === editItem.memberId);
     if (memberIndex !== -1) {
-      if (editItem.photoUrl) members[memberIndex].photoUrl = editItem.photoUrl;
-      if (editItem.photoTransform) members[memberIndex].photoTransform = editItem.photoTransform;
-      saveMembers(members);
+      if (editItem.photoUrl) cachedMembers[memberIndex].photoUrl = editItem.photoUrl;
+      if (editItem.photoTransform) cachedMembers[memberIndex].photoTransform = editItem.photoTransform;
+      saveMembers(cachedMembers);
     }
+
+    try {
+      await ensureAnonymousAuth();
+      await updateDoc(doc(db, "batch_edits", editId), { status: 'CONFIRMED' });
+    } catch (err) {}
   }
-  return getBatchEdits();
+  return cachedEdits;
+}
+
+// Auto seed default data to Firestore if completely empty
+async function seedFirestoreData() {
+  try {
+    await ensureAnonymousAuth();
+    for (const m of DEFAULT_MEMBERS) {
+      await setDoc(doc(db, "members", m.id), m);
+    }
+    for (const b of DEFAULT_BATCHES) {
+      await setDoc(doc(db, "batches", b.batchId), b);
+    }
+    await setDoc(doc(db, "config", "template_studio"), DEFAULT_TEMPLATE_CONFIG);
+  } catch (e) {
+    console.warn("Auto-seed error:", e);
+  }
+}
+
+// Fallbacks for local storage
+function getMembersLocal() {
+  const data = localStorage.getItem(MEMBERS_KEY);
+  if (!data) return DEFAULT_MEMBERS;
+  try { return JSON.parse(data); } catch (e) { return DEFAULT_MEMBERS; }
+}
+
+function getBatchesLocal() {
+  const data = localStorage.getItem(BATCHES_KEY);
+  if (!data) return DEFAULT_BATCHES;
+  try { return JSON.parse(data); } catch (e) { return DEFAULT_BATCHES; }
+}
+
+function getBatchEditsLocal() {
+  const data = localStorage.getItem(BATCH_EDITS_KEY);
+  if (!data) return [];
+  try { return JSON.parse(data); } catch (e) { return []; }
+}
+
+function getTemplateConfigLocal() {
+  const data = localStorage.getItem(TEMPLATE_CONFIG_KEY);
+  if (!data) return DEFAULT_TEMPLATE_CONFIG;
+  try { return { ...DEFAULT_TEMPLATE_CONFIG, ...JSON.parse(data) }; } catch (e) { return DEFAULT_TEMPLATE_CONFIG; }
 }
