@@ -22,7 +22,8 @@ export const DEFAULT_TEMPLATE_CONFIG = {
   glowIntensity: 0.95,       // Glow opacity / intensity (0.0 - 1.0)
   glowColor: '#FFFFFF',      // Glow color hex
   showRefGuide: false,       // Reference ID card overlay guide toggle
-  refGuideOpacity: 0.4       // Reference guide opacity
+  refGuideOpacity: 0.4,      // Reference guide opacity
+  directorSignUrl: ''        // Custom Director PNG Signature URL
 };
 
 export function getTemplateConfig() {

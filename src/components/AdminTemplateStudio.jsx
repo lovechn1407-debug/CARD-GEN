@@ -1,12 +1,32 @@
 import React, { useState } from 'react';
 import IDCardCanvas from './IDCardCanvas';
+import FlippableIDCard from './FlippableIDCard';
 import { getTemplateConfig, saveTemplateConfig, DEFAULT_TEMPLATE_CONFIG } from '../utils/storage';
-import { Sliders, Type, Layers, Eye, EyeOff, Save, RotateCcw, Check } from 'lucide-react';
+import { uploadToImgBB } from '../utils/imgbb';
+import { Sliders, Type, Layers, Eye, EyeOff, Save, RotateCcw, Check, Upload, FileText } from 'lucide-react';
 
 export default function AdminTemplateStudio({ members, onConfigSaved }) {
   const [config, setConfig] = useState(getTemplateConfig());
   const [selectedMemberIndex, setSelectedMemberIndex] = useState(0);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isUploadingSign, setIsUploadingSign] = useState(false);
+
+  const handleDirectorSignUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingSign(true);
+    try {
+      const hostedUrl = await uploadToImgBB(file);
+      const updatedConfig = { ...config, directorSignUrl: hostedUrl };
+      setConfig(updatedConfig);
+      saveTemplateConfig(updatedConfig);
+      if (onConfigSaved) onConfigSaved(updatedConfig);
+    } catch (err) {
+      alert('Failed to upload Director Signature PNG.');
+    } finally {
+      setIsUploadingSign(false);
+    }
+  };
 
   const sampleMember = members[selectedMemberIndex] || members[0] || {
     name: 'LOVE CHAUHAN',
@@ -76,12 +96,13 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
           </div>
 
           {/* ID Card Canvas Container */}
-          <div style={{ width: '270px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 15px 30px rgba(0,0,0,0.2)', border: '1px solid #cbd5e1', background: '#0f172a' }}>
-            <IDCardCanvas
+          <div style={{ width: '270px' }}>
+            <FlippableIDCard
               member={sampleMember}
               interactive={false}
               overlayOpacity={1.0}
               templateConfig={config}
+              showFlipButton={true}
             />
           </div>
 
@@ -400,6 +421,50 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   onChange={(e) => setConfig({ ...config, glowColor: e.target.value })}
                   style={{ height: '32px', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Director Signature PNG Controls Card */}
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0, paddingBottom: '8px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FileText style={{ width: '16px', height: '16px', color: '#16a34a' }} /> Back Side Director Signature PNG
+            </h4>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ width: '130px', height: '60px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#0b133b', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '4px', flexShrink: 0 }}>
+                {config.directorSignUrl ? (
+                  <img src={config.directorSignUrl} alt="Director Signature" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                ) : (
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>Default Signature</span>
+                )}
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
+                  Upload custom PNG transparent signature of the Director to appear on the back of all cards above the "DIRECTOR" text label.
+                </p>
+                <div style={{ display: 'flex', itemsAlign: 'center', gap: '8px' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#1d4ed8', color: '#ffffff', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                    <Upload style={{ width: 14, height: 14 }} />
+                    {isUploadingSign ? 'Uploading...' : 'Import Director Signature PNG'}
+                    <input type="file" accept="image/png,image/*" onChange={handleDirectorSignUpload} disabled={isUploadingSign} style={{ display: 'none' }} />
+                  </label>
+                  {config.directorSignUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = { ...config, directorSignUrl: '' };
+                        setConfig(updated);
+                        saveTemplateConfig(updated);
+                        if (onConfigSaved) onConfigSaved(updated);
+                      }}
+                      style={{ padding: '6px 10px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#dc2626', cursor: 'pointer' }}
+                    >
+                      Reset Default
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

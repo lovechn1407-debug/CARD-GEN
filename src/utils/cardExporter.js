@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import JSZip from 'jszip';
+import QRCode from 'qrcode';
 import { CARD_WIDTH, CARD_HEIGHT } from '../components/IDCardCanvas';
 import { getTemplateConfig } from './storage';
 
@@ -14,7 +15,7 @@ function loadImage(src) {
 }
 
 /**
- * Renders member card using exact user PNG overlays and lower chest fade height
+ * Renders Front Side of member card
  */
 export async function renderMemberCardCanvas(member) {
   const canvas = document.createElement('canvas');
@@ -48,7 +49,7 @@ export async function renderMemberCardCanvas(member) {
     }
   }
 
-  // Wait for Google Fonts (Bebas Neue & Poppins) to be 100% loaded in browser font engine
+  // Wait for Google Fonts
   if (document.fonts) {
     try {
       await document.fonts.ready;
@@ -133,11 +134,10 @@ export async function renderMemberCardCanvas(member) {
   }
   ctx.restore();
 
-  // LAYER 4: Dynamic Typography (Name & Designation) - Exact Parity with Canvas Component
+  // LAYER 4: Dynamic Typography
   ctx.save();
   ctx.textAlign = 'center';
 
-  // 4A. MEMBER NAME
   const nameText = (member.name || 'MEMBER NAME').toUpperCase();
   const nameSize = cfg.nameFontSize || 72;
   ctx.font = `normal ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
@@ -146,7 +146,6 @@ export async function renderMemberCardCanvas(member) {
   const nameYPos = CARD_HEIGHT * (cfg.nameY ?? 0.74);
   ctx.fillText(nameText, CARD_WIDTH / 2, nameYPos);
 
-  // 4B. DESIGNATION
   const rawDesig = member.designation || 'Creative Designing';
   const desigText = cfg.desigQuotes !== false ? `“ ${rawDesig} ”` : rawDesig;
   const desigSize = cfg.desigFontSize || 32;
@@ -160,39 +159,249 @@ export async function renderMemberCardCanvas(member) {
   return canvas;
 }
 
-export async function exportMembersToPdf(selectedMembers, onProgress) {
+/**
+ * Renders Back Side of member card
+ */
+export async function renderMemberCardBackCanvas(member) {
+  const canvas = document.createElement('canvas');
+  canvas.width = CARD_WIDTH;
+  canvas.height = CARD_HEIGHT;
+  const ctx = canvas.getContext('2d');
+  const cfg = getTemplateConfig();
+
+  // 1. Generate QR Code
+  const rollNo = member?.collegeRollNo || member?.id || '2100290130085';
+  const verifyUrl = `${window.location.origin}${window.location.pathname}#/verify?id=${encodeURIComponent(rollNo)}`;
+  
+  let qrImg = null;
+  try {
+    const qrDataUrl = await QRCode.toDataURL(verifyUrl, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
+    qrImg = await loadImage(qrDataUrl);
+  } catch (e) {}
+
+  // 2. Director Signature PNG
+  let directorSignImg = null;
+  if (cfg.directorSignUrl) {
+    try {
+      directorSignImg = await loadImage(cfg.directorSignUrl);
+    } catch (e) {}
+  }
+
+  if (document.fonts) {
+    try { await document.fonts.ready; } catch (e) {}
+  }
+
+  // 3. Render Background Gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
+  bgGrad.addColorStop(0, '#060a28');
+  bgGrad.addColorStop(0.3, '#0b133b');
+  bgGrad.addColorStop(1, '#050920');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+
+  // Top Bar Divider
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.fillRect(0, 80, CARD_WIDTH, 2);
+
+  // 4. QR Code Container Box
+  const qrBoxX = 40;
+  const qrBoxY = 140;
+  const qrBoxSize = 195;
+
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
+  ctx.beginPath();
+  ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 12);
+  ctx.fill();
+  ctx.restore();
+
+  if (qrImg) {
+    ctx.drawImage(qrImg, qrBoxX + 10, qrBoxY + 10, qrBoxSize - 20, qrBoxSize - 20);
+  }
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 15px "Inter", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = '1px';
+  ctx.fillText('VERIFICATION QR', qrBoxX + qrBoxSize / 2, qrBoxY + qrBoxSize + 32);
+
+  // 5. Right Info Column
+  const infoX = 275;
+  let infoY = 165;
+
+  ctx.font = '22px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('📞', infoX, infoY);
+  ctx.font = '600 23px "Inter", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(member?.phone || '8383090874', infoX + 42, infoY - 2);
+
+  infoY += 55;
+  ctx.font = '22px sans-serif';
+  ctx.fillText('💧', infoX, infoY);
+  ctx.font = '600 23px "Inter", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  const bloodTxt = member?.bloodGroup ? (member.bloodGroup.includes('+') || member.bloodGroup.includes('-') ? member.bloodGroup : `${member.bloodGroup} +ve`) : 'B +ve';
+  ctx.fillText(bloodTxt, infoX + 42, infoY - 2);
+
+  infoY += 55;
+  ctx.font = '22px sans-serif';
+  ctx.fillText('🛡️', infoX, infoY);
+  ctx.font = '600 23px "Inter", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  const validTxt = member?.validTill ? (member.validTill.toUpperCase().includes('SEPT') ? member.validTill : `SEPT ${new Date(member.validTill).getFullYear() || 2029}`) : 'SEPT 2029';
+  ctx.fillText(validTxt, infoX + 42, infoY - 2);
+
+  // 6. Separator Line
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(40, 425);
+  ctx.lineTo(CARD_WIDTH - 40, 425);
+  ctx.stroke();
+
+  // 7. Terms Paragraphs
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.font = '400 21px "Inter", system-ui, sans-serif';
+  ctx.textAlign = 'left';
+
+  const wrapText = (text, x, startY, maxWidth, lineHeight) => {
+    const words = text.split(' ');
+    let line = '';
+    let currentY = startY;
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
+      if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+        ctx.fillText(line, x, currentY);
+        line = words[n] + ' ';
+        currentY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, x, currentY);
+    return currentY + lineHeight;
+  };
+
+  let pY = 475;
+  pY = wrapText('This card certifies that the holder is a registered Member/Head of E-Cell @ I.T.S ENGINEERIGN COLLEGE GREATER NOIDA.', 40, pY, CARD_WIDTH - 80, 32) + 16;
+  pY = wrapText('The holder must produce this card upon request by campus security or library staff. Misuse of this card will result in disciplinary action.', 40, pY, CARD_WIDTH - 80, 32) + 16;
+  pY = wrapText('If Found: Please drop this card into a mailbox or return it to the Student Services Office at NewGen ITSEC, Knowledge Park III Greater Noida.', 40, pY, CARD_WIDTH - 80, 32);
+
+  // 8. Footer Row
+  const footerY = 935;
+  const now = new Date();
+  const dateStr = `${now.getDate().toString().padStart(2, '0')}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+  ctx.textAlign = 'left';
+  ctx.font = '18px "Inter", monospace';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+  ctx.fillText(dateStr, 40, footerY - 24);
+  ctx.font = 'bold 15px "Inter", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('PRINT DATE', 40, footerY);
+
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 16px "Inter", sans-serif';
+  ctx.fillStyle = '#a855f7';
+  ctx.fillText('A', CARD_WIDTH / 2 - 48, footerY);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('AS STUDIOS', CARD_WIDTH / 2 + 6, footerY);
+
+  const rightX = CARD_WIDTH - 40;
+  ctx.textAlign = 'right';
+
+  if (directorSignImg) {
+    const signW = 120;
+    const signH = (signW * directorSignImg.height) / directorSignImg.width;
+    ctx.drawImage(directorSignImg, rightX - signW, footerY - 55 - signH, signW, signH);
+  } else {
+    ctx.save();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(rightX - 110, footerY - 45);
+    ctx.bezierCurveTo(rightX - 90, footerY - 75, rightX - 70, footerY - 25, rightX - 50, footerY - 55);
+    ctx.bezierCurveTo(rightX - 40, footerY - 70, rightX - 30, footerY - 35, rightX - 10, footerY - 50);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.font = 'bold 15px "Inter", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('DIRECTOR', rightX, footerY);
+
+  return canvas;
+}
+
+/**
+ * Combines Front + Back side-by-side with a 1px gap
+ */
+export async function renderMemberCardCombinedCanvas(member, includeBack = true) {
+  const frontCanvas = await renderMemberCardCanvas(member);
+  if (!includeBack) return frontCanvas;
+
+  const backCanvas = await renderMemberCardBackCanvas(member);
+
+  const combinedCanvas = document.createElement('canvas');
+  // Front card width + 1px gap + Back card width
+  combinedCanvas.width = CARD_WIDTH * 2 + 1;
+  combinedCanvas.height = CARD_HEIGHT;
+  const ctx = combinedCanvas.getContext('2d');
+
+  // 1. Draw Front Card on Left
+  ctx.drawImage(frontCanvas, 0, 0);
+
+  // 2. Draw 1px Gap Divider
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(CARD_WIDTH, 0, 1, CARD_HEIGHT);
+
+  // 3. Draw Back Card on Right with 1px gap
+  ctx.drawImage(backCanvas, CARD_WIDTH + 1, 0);
+
+  return combinedCanvas;
+}
+
+export async function exportMembersToPdf(selectedMembers, onProgress, includeBack = true) {
+  const pdfWidth = includeBack ? 2.125 * 2 + 0.003 : 2.125;
+  const pdfHeight = 3.375;
+
   const pdf = new jsPDF({
-    orientation: 'portrait',
+    orientation: includeBack ? 'landscape' : 'portrait',
     unit: 'in',
-    format: [2.125, 3.375]
+    format: [pdfWidth, pdfHeight]
   });
 
   for (let i = 0; i < selectedMembers.length; i++) {
     const member = selectedMembers[i];
     if (onProgress) onProgress(i + 1, selectedMembers.length, member.name);
 
-    const canvas = await renderMemberCardCanvas(member);
+    const canvas = await renderMemberCardCombinedCanvas(member, includeBack);
     const imgData = canvas.toDataURL('image/png', 1.0);
 
-    if (i > 0) pdf.addPage([2.125, 3.375], 'portrait');
-    pdf.addImage(imgData, 'PNG', 0, 0, 2.125, 3.375);
+    if (i > 0) pdf.addPage([pdfWidth, pdfHeight], includeBack ? 'landscape' : 'portrait');
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
   }
 
   pdf.save(`ECELL_ID_Cards_Print_${Date.now()}.pdf`);
 }
 
-export async function exportMembersToZip(selectedMembers, onProgress) {
+export async function exportMembersToZip(selectedMembers, onProgress, includeBack = true) {
   const zip = new JSZip();
 
   for (let i = 0; i < selectedMembers.length; i++) {
     const member = selectedMembers[i];
     if (onProgress) onProgress(i + 1, selectedMembers.length, member.name);
 
-    const canvas = await renderMemberCardCanvas(member);
+    const canvas = await renderMemberCardCombinedCanvas(member, includeBack);
     const dataUrl = canvas.toDataURL('image/png', 1.0);
     const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
 
-    const fileName = `ECELL_ID_${member.collegeRollNo || member.id}_${member.name.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+    const fileName = `ECELL_ID_${member.collegeRollNo || member.id}_${member.name.replace(/[^a-zA-Z0-9]/g, '_')}${includeBack ? '_Front_Back' : '_Front'}.png`;
     zip.file(fileName, base64Data, { base64: true });
   }
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import IDCardCanvas from './IDCardCanvas';
+import FlippableIDCard from './FlippableIDCard';
 import AddMemberModal from './AddMemberModal';
 import BulkCsvModal from './BulkCsvModal';
 import CardEditorModal from './CardEditorModal';
@@ -86,31 +87,17 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
           <p style={{ fontSize: '12px', color: '#64748b' }}>Click "Add New Member" or "Bulk CSV Entry" to start generating E-Cell ID cards.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
           {filteredMembers.map((member) => (
             <div
               key={member.id}
-              style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'box-shadow 0.2s' }}
+              style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'box-shadow 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)'}
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
             >
-              {/* Card Canvas */}
-              <div style={{ position: 'relative', background: '#0f172a', borderRadius: '10px', overflow: 'hidden', border: '1px solid #1e293b' }}>
-                <IDCardCanvas member={member} interactive={false} overlayOpacity={1.0} />
-                {/* Hover Overlay */}
-                <div
-                  className="card-hover-overlay"
-                  style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                  onMouseLeave={e => e.currentTarget.style.opacity = 0}
-                >
-                  <button
-                    onClick={() => setEditingMember(member)}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    <Edit3 style={{ width: 14, height: 14 }} /> Modify Card
-                  </button>
-                </div>
+              {/* 3D Flippable Card Canvas */}
+              <div style={{ position: 'relative' }}>
+                <FlippableIDCard member={member} interactive={false} overlayOpacity={1.0} showFlipButton={true} />
               </div>
 
               {/* Member Info */}
@@ -132,12 +119,12 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
               </div>
 
               {/* Quick Actions */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
                 <button
                   onClick={() => setEditingMember(member)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#1d4ed8', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  <Edit3 style={{ width: 13, height: 13 }} /> Edit Photo/Card
+                  <Edit3 style={{ width: 13, height: 13 }} /> Modify Card
                 </button>
                 <button
                   onClick={() => { if (confirm(`Delete card for ${member.name}?`)) onDeleteMember(member.id); }}

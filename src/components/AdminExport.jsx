@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import IDCardCanvas from './IDCardCanvas';
+import FlippableIDCard from './FlippableIDCard';
 import { exportMembersToPdf, exportMembersToZip } from '../utils/cardExporter';
-import { Printer, FileText, Archive, CheckSquare, Square, Filter, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Printer, FileText, Archive, CheckSquare, Square, Filter, Sparkles, CheckCircle2, RotateCw } from 'lucide-react';
 
 export default function AdminExport({ members, batches }) {
   const [selectedBatchFilter, setSelectedBatchFilter] = useState('ALL');
   const [selectedIds, setSelectedIds] = useState(members.map((m) => m.id));
+  const [includeBack, setIncludeBack] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState({ current: 0, total: 0, name: '' });
   const [exportType, setExportType] = useState(null);
@@ -29,7 +31,7 @@ export default function AdminExport({ members, batches }) {
   const handleExportPdf = async () => {
     if (!selectedMemberList.length) return;
     setIsExporting(true); setExportType('PDF');
-    try { await exportMembersToPdf(selectedMemberList, (cur, tot, name) => setExportProgress({ current: cur, total: tot, name })); }
+    try { await exportMembersToPdf(selectedMemberList, (cur, tot, name) => setExportProgress({ current: cur, total: tot, name }), includeBack); }
     catch (e) { alert('Failed to generate PDF.'); }
     finally { setIsExporting(false); }
   };
@@ -37,7 +39,7 @@ export default function AdminExport({ members, batches }) {
   const handleExportZip = async () => {
     if (!selectedMemberList.length) return;
     setIsExporting(true); setExportType('ZIP');
-    try { await exportMembersToZip(selectedMemberList, (cur, tot, name) => setExportProgress({ current: cur, total: tot, name })); }
+    try { await exportMembersToZip(selectedMemberList, (cur, tot, name) => setExportProgress({ current: cur, total: tot, name }), includeBack); }
     catch (e) { alert('Failed to generate ZIP.'); }
     finally { setIsExporting(false); }
   };
@@ -74,6 +76,22 @@ export default function AdminExport({ members, batches }) {
               <Archive style={{ width: 15, height: 15, color: '#7c3aed' }} /> Export ZIP
             </button>
           </div>
+        </div>
+
+        {/* Print Back Side Option Checkbox */}
+        <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={includeBack}
+              onChange={(e) => setIncludeBack(e.target.checked)}
+              style={{ width: '16px', height: '16px', accentColor: '#1d4ed8', cursor: 'pointer' }}
+            />
+            <span>Include Card Back Side in Print / Export</span>
+          </label>
+          <span style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+            {includeBack ? '✓ Front & Back printed side-by-side on same page with 1px gap' : 'Front side only'}
+          </span>
         </div>
 
         {/* Filter & Selection Row */}
@@ -160,9 +178,9 @@ export default function AdminExport({ members, batches }) {
                 </div>
                 <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#94a3b8' }}>{member.collegeRollNo}</span>
               </div>
-              {/* Card Canvas */}
-              <div style={{ background: '#0f172a', borderRadius: '8px', overflow: 'hidden', padding: '4px', display: 'flex', justifyContent: 'center' }}>
-                <IDCardCanvas member={member} interactive={false} overlayOpacity={1.0} />
+              {/* Card Canvas with 3D Flip */}
+              <div>
+                <FlippableIDCard member={member} interactive={false} overlayOpacity={1.0} showFlipButton={true} />
               </div>
             </div>
           );
