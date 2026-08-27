@@ -112,6 +112,12 @@ export default function IDCardCanvas({
       const drawWidth = 430;
       const drawHeight = drawWidth / aspect;
 
+      // Soft ambient drop shadow / glow behind transparent PNG person cutout
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 10;
+
       ctx.drawImage(photoImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
       ctx.restore();
     }
