@@ -31,97 +31,107 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto">
-      {/* Compact Studio Header */}
-      <div className="hero-card p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Studio Header Bar */}
+      <div style={{ background: 'linear-gradient(to right, #eff6ff, #eef2ff)', border: '1px solid #dbeafe', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-blue-600" /> Card Design & Layout Studio
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <Sliders style={{ width: '20px', height: '20px', color: '#0072ce' }} /> Card Design & Layout Studio
           </h3>
-          <p className="text-xs text-slate-500">
-            Adjust typography positions, font sizes, text letter spacing, and overlay start height live.
+          <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>
+            Fine-tune typography positions, font sizes, text letter spacing, black fade height, and reference guide overlay live.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={handleReset} className="hero-btn hero-btn-secondary text-xs py-1.5 px-3">
-            <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={handleReset} className="hero-btn hero-btn-secondary" style={{ fontSize: '12px', padding: '8px 14px' }}>
+            <RotateCcw style={{ width: '14px', height: '14px' }} /> Reset Defaults
           </button>
-          <button onClick={handleSave} className="hero-btn hero-btn-primary text-xs py-1.5 px-3">
-            {savedSuccess ? <Check className="w-3.5 h-3.5 text-green-300" /> : <Save className="w-3.5 h-3.5" />}
-            {savedSuccess ? 'Saved!' : 'Save Layout'}
+          <button onClick={handleSave} className="hero-btn hero-btn-primary" style={{ fontSize: '12px', padding: '8px 14px' }}>
+            {savedSuccess ? <Check style={{ width: '14px', height: '14px', color: '#86efac' }} /> : <Save style={{ width: '14px', height: '14px' }} />}
+            {savedSuccess ? 'Layout Saved!' : 'Save Layout Settings'}
           </button>
         </div>
       </div>
 
-      {/* Side-by-Side 2-Column Studio Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN: Sticky Compact Card Preview (Max-Width 260px, fits completely on screen without scrolling!) */}
-        <div className="md:col-span-4 sticky top-20 flex flex-col items-center">
-          <div className="hero-card p-4 w-full flex flex-col items-center space-y-3 bg-slate-900/5">
-            <div className="flex items-center justify-between w-full text-xs font-semibold text-slate-700">
-              <span>Card Preview</span>
-              <select
-                value={selectedMemberIndex}
-                onChange={(e) => setSelectedMemberIndex(parseInt(e.target.value))}
-                className="hero-input py-1 px-2 text-xs w-auto bg-white"
-              >
-                {members.map((m, idx) => (
-                  <option key={m.id} value={idx}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Compact ID Card Container */}
-            <div className="w-full max-w-[260px] shadow-xl rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
-              <IDCardCanvas
-                member={sampleMember}
-                interactive={false}
-                overlayOpacity={1.0}
-                templateConfig={config}
-              />
-            </div>
-
-            <p className="text-[11px] text-slate-500 text-center">
-              Target ID Card Size: 2.125" × 3.375" (Portrait)
-            </p>
+      {/* Main Studio 2-Column Split Layout */}
+      <div className="studio-container" style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 310px) 1fr', gap: '24px', alignItems: 'start' }}>
+        
+        {/* LEFT COLUMN: Sticky Card Preview (Fixed 280px-310px width, sticky top 80px) */}
+        <div style={{ position: 'sticky', top: '80px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          
+          <div style={{ width: '100%', display: 'flex', itemsAlign: 'center', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold', color: '#334155' }}>
+            <span>Live Card Preview</span>
+            <select
+              value={selectedMemberIndex}
+              onChange={(e) => setSelectedMemberIndex(parseInt(e.target.value))}
+              style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', background: '#ffffff' }}
+            >
+              {members.map((m, idx) => (
+                <option key={m.id} value={idx}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {/* ID Card Canvas Container */}
+          <div style={{ width: '270px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 15px 30px rgba(0,0,0,0.2)', border: '1px solid #cbd5e1', background: '#0f172a' }}>
+            <IDCardCanvas
+              member={sampleMember}
+              interactive={false}
+              overlayOpacity={1.0}
+              templateConfig={config}
+            />
+          </div>
+
+          <p style={{ fontSize: '11px', color: '#64748b', textAlign: 'center', margin: 0 }}>
+            Standard Size: 2.125" × 3.375" (Portrait ID)
+          </p>
         </div>
 
         {/* RIGHT COLUMN: Edit Controls Panel */}
-        <div className="md:col-span-8 space-y-4">
-          {/* Reference Overlay Guide Toggle */}
-          <div className="hero-card p-4 border-amber-200 bg-amber-50/40 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* Reference Overlay Guide Section */}
+          <div style={{ background: 'rgba(254, 243, 199, 0.4)', border: '1px solid #fde68a', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {config.showRefGuide ? (
-                  <Eye className="w-4 h-4 text-amber-600" />
+                  <Eye style={{ width: '20px', height: '20px', color: '#d97706' }} />
                 ) : (
-                  <EyeOff className="w-4 h-4 text-slate-400" />
+                  <EyeOff style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
                 )}
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">Reference ID Card Overlay Guide</h4>
-                  <p className="text-[11px] text-slate-500">Overlay target image guide to check pixel alignment</p>
+                  <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>
+                    Reference ID Card Overlay Guide
+                  </h4>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0 0' }}>
+                    Overlays target card image guide to check pixel alignment
+                  </p>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setConfig({ ...config, showRefGuide: !config.showRefGuide })}
-                className={`hero-btn text-xs py-1 px-2.5 ${
-                  config.showRefGuide ? 'hero-btn-primary bg-amber-600 hover:bg-amber-700' : 'hero-btn-secondary'
-                }`}
+                className="hero-btn"
+                style={{
+                  fontSize: '12px',
+                  padding: '6px 12px',
+                  backgroundColor: config.showRefGuide ? '#d97706' : '#ffffff',
+                  color: config.showRefGuide ? '#ffffff' : '#334155',
+                  borderColor: config.showRefGuide ? 'transparent' : '#cbd5e1'
+                }}
               >
-                {config.showRefGuide ? 'Guide On' : 'Guide Off'}
+                {config.showRefGuide ? 'Guide Enabled' : 'Enable Guide'}
               </button>
             </div>
 
             {config.showRefGuide && (
-              <div className="pt-2 border-t border-amber-200 space-y-1">
-                <div className="flex justify-between text-xs text-slate-700 font-medium">
-                  <span>Guide Opacity</span>
+              <div style={{ paddingTop: '10px', borderTop: '1px solid #fde68a', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Guide Opacity Transparency</span>
                   <span>{Math.round(config.refGuideOpacity * 100)}%</span>
                 </div>
                 <input
@@ -131,22 +141,24 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   step="0.05"
                   value={config.refGuideOpacity}
                   onChange={(e) => setConfig({ ...config, refGuideOpacity: parseFloat(e.target.value) })}
-                  className="w-full h-1.5 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                  style={{ width: '100%', height: '6px', accentColor: '#d97706', cursor: 'pointer' }}
                 />
               </div>
             )}
           </div>
 
-          {/* Member Name Controls */}
-          <div className="hero-card p-4 space-y-3">
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
-              <Type className="w-4 h-4 text-blue-600" /> Member Name Controls (Bebas Neue)
+          {/* Member Name Controls Card */}
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0, paddingBottom: '8px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Type style={{ width: '16px', height: '16px', color: '#0072ce' }} /> Member Name Controls (Bebas Neue)
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="space-y-1">
-                <div className="flex justify-between text-slate-700 font-medium">
-                  <span>Vertical Y Position</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              
+              {/* Name Y Position */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Vertical Position (Y)</span>
                   <span>{Math.round(config.nameY * 100)}%</span>
                 </div>
                 <input
@@ -156,13 +168,14 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   step="0.005"
                   value={config.nameY}
                   onChange={(e) => setConfig({ ...config, nameY: parseFloat(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  style={{ width: '100%', height: '6px', accentColor: '#0072ce', cursor: 'pointer' }}
                 />
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between text-slate-700 font-medium">
-                  <span>Font Size</span>
+              {/* Name Font Size */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Font Size (Zoom)</span>
                   <span>{config.nameFontSize}px</span>
                 </div>
                 <input
@@ -172,13 +185,14 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   step="2"
                   value={config.nameFontSize}
                   onChange={(e) => setConfig({ ...config, nameFontSize: parseInt(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  style={{ width: '100%', height: '6px', accentColor: '#0072ce', cursor: 'pointer' }}
                 />
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between text-slate-700 font-medium">
-                  <span>Letter / Text Spacing</span>
+              {/* Name Letter Spacing */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Text / Letter Spacing</span>
                   <span>{config.nameLetterSpacing}px</span>
                 </div>
                 <input
@@ -188,32 +202,35 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   step="1"
                   value={config.nameLetterSpacing}
                   onChange={(e) => setConfig({ ...config, nameLetterSpacing: parseInt(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  style={{ width: '100%', height: '6px', accentColor: '#0072ce', cursor: 'pointer' }}
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-slate-700 font-medium mb-1">Text Color</label>
+              {/* Name Color */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Text Color</label>
                 <input
                   type="color"
                   value={config.nameColor}
                   onChange={(e) => setConfig({ ...config, nameColor: e.target.value })}
-                  className="h-7 w-full rounded-md border border-slate-300 cursor-pointer"
+                  style={{ height: '32px', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Designation Controls */}
-          <div className="hero-card p-4 space-y-3">
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
-              <Type className="w-4 h-4 text-purple-600" /> Designation Controls (Poppins Italics)
+          {/* Designation Controls Card */}
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0, paddingBottom: '8px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Type style={{ width: '16px', height: '16px', color: '#9333ea' }} /> Designation Controls (Poppins Italics)
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="space-y-1">
-                <div className="flex justify-between text-slate-700 font-medium">
-                  <span>Vertical Y Position</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              
+              {/* Designation Y Position */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Vertical Position (Y)</span>
                   <span>{Math.round(config.desigY * 100)}%</span>
                 </div>
                 <input
@@ -223,13 +240,14 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   step="0.005"
                   value={config.desigY}
                   onChange={(e) => setConfig({ ...config, desigY: parseFloat(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                  style={{ width: '100%', height: '6px', accentColor: '#9333ea', cursor: 'pointer' }}
                 />
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between text-slate-700 font-medium">
-                  <span>Font Size</span>
+              {/* Designation Font Size */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Font Size (Zoom)</span>
                   <span>{config.desigFontSize}px</span>
                 </div>
                 <input
@@ -239,13 +257,14 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   step="1"
                   value={config.desigFontSize}
                   onChange={(e) => setConfig({ ...config, desigFontSize: parseInt(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                  style={{ width: '100%', height: '6px', accentColor: '#9333ea', cursor: 'pointer' }}
                 />
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between text-slate-700 font-medium">
-                  <span>Letter / Text Spacing</span>
+              {/* Designation Letter Spacing */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Text / Letter Spacing</span>
                   <span>{config.desigLetterSpacing}px</span>
                 </div>
                 <input
@@ -255,31 +274,32 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   step="1"
                   value={config.desigLetterSpacing}
                   onChange={(e) => setConfig({ ...config, desigLetterSpacing: parseInt(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                  style={{ width: '100%', height: '6px', accentColor: '#9333ea', cursor: 'pointer' }}
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-slate-700 font-medium mb-1">Text Color</label>
+              {/* Designation Color */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Text Color</label>
                 <input
                   type="color"
                   value={config.desigColor}
                   onChange={(e) => setConfig({ ...config, desigColor: e.target.value })}
-                  className="h-7 w-full rounded-md border border-slate-300 cursor-pointer"
+                  style={{ height: '32px', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Black Fade Overlay Controls */}
-          <div className="hero-card p-4 space-y-3">
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
-              <Layers className="w-4 h-4 text-slate-700" /> Black Fade Overlay Position
+          {/* Black Fade Overlay Controls Card */}
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0, paddingBottom: '8px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Layers style={{ width: '16px', height: '16px', color: '#334155' }} /> Black Fade Overlay Position
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="space-y-1">
-                <div className="flex justify-between text-slate-700 font-medium">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
                   <span>Fade Start Height (Y Position)</span>
                   <span>{Math.round(config.fadeStartY * 100)}%</span>
                 </div>
@@ -290,12 +310,12 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   step="0.01"
                   value={config.fadeStartY}
                   onChange={(e) => setConfig({ ...config, fadeStartY: parseFloat(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-800"
+                  style={{ width: '100%', height: '6px', accentColor: '#0f172a', cursor: 'pointer' }}
                 />
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between text-slate-700 font-medium">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
                   <span>Overlay Transparency</span>
                   <span>{Math.round(config.fadeOpacity * 100)}%</span>
                 </div>
@@ -306,7 +326,7 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   step="0.05"
                   value={config.fadeOpacity}
                   onChange={(e) => setConfig({ ...config, fadeOpacity: parseFloat(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-800"
+                  style={{ width: '100%', height: '6px', accentColor: '#0f172a', cursor: 'pointer' }}
                 />
               </div>
             </div>
