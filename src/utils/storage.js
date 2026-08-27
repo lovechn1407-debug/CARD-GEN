@@ -295,7 +295,7 @@ export async function approveBatchEdit(batchId, collegeRollNo) {
   return cachedEdits;
 }
 
-// Auto seed default data to Realtime Database
+// Auto seed ONLY if data doesn't already exist (never overwrites user data)
 async function seedRealtimeDatabase() {
   try {
     await ensureAnonymousAuth();
@@ -305,7 +305,11 @@ async function seedRealtimeDatabase() {
     for (const b of DEFAULT_BATCHES) {
       await rtdbSet(rtdbRef(rtdb, `batches/${b.batchId}`), b);
     }
-    await rtdbSet(rtdbRef(rtdb, 'config/template_studio'), DEFAULT_TEMPLATE_CONFIG);
+    // ONLY write default config if NO config exists yet — never overwrite existing user config
+    const configSnap = await rtdbGet(rtdbRef(rtdb, 'config/template_studio'));
+    if (!configSnap.exists()) {
+      await rtdbSet(rtdbRef(rtdb, 'config/template_studio'), DEFAULT_TEMPLATE_CONFIG);
+    }
   } catch (e) {
     console.warn("Realtime DB Auto-seed error:", e);
   }

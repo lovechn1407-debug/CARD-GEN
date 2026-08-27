@@ -1,8 +1,6 @@
-// One-time seed: run with node seed.mjs
-// Usage: node seed.mjs
-
+// Safe seed: ONLY sets allowedAdminEmail, never overwrites other studio settings
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set } from "firebase/database";
+import { getDatabase, ref, update } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBRtac6GfcqrRpSxmBo8QlQ3hETQkP_9K4",
@@ -18,40 +16,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const config = {
-  nameY: 0.74,
-  nameFontSize: 72,
-  nameLetterSpacing: 1,
-  nameColor: '#FFFFFF',
-  desigY: 0.83,
-  desigFontSize: 32,
-  desigLetterSpacing: 0,
-  desigColor: '#FFFFFF',
-  desigQuotes: true,
-  fadeStartY: 0.46,
-  fadeOpacity: 1.0,
-  glowEnabled: true,
-  glowBlur: 55,
-  glowIntensity: 0.95,
-  glowColor: '#FFFFFF',
-  showRefGuide: false,
-  refGuideOpacity: 0.4,
-  directorSignUrl: '',
-  allowedAdminEmail: 'lovechn1407@gmail.com',
-  backQrX: 42,
-  backQrY: 140,
-  backQrSize: 195,
-  backTextX: 315,
-  backTextY: 194,
-  backTextFontSize: 23,
-  backSignX: 568,
-  backSignY: 875,
-  backSignWidth: 120
-};
-
 async function main() {
-  await set(ref(db, 'config/template_studio'), config);
-  console.log("✅ Config seeded with allowedAdminEmail: lovechn1407@gmail.com");
+  // update() MERGES — only sets allowedAdminEmail, all other user studio settings are preserved
+  await update(ref(db, 'config/template_studio'), {
+    allowedAdminEmail: 'lovechn1407@gmail.com'
+  });
+  console.log("✅ allowedAdminEmail safely set to: lovechn1407@gmail.com");
+  console.log("ℹ️  All other studio config fields preserved.");
   process.exit(0);
 }
 main().catch((e) => { console.error(e); process.exit(1); });
