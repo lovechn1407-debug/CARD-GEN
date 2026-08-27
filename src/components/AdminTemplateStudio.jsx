@@ -331,6 +331,79 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
               </div>
             </div>
           </div>
+
+          {/* Photo Backlight Glow Controls Card */}
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sliders style={{ width: '16px', height: '16px', color: '#eab308' }} /> Photo Cutout Aura / Backlight Glow
+              </h4>
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, glowEnabled: !config.glowEnabled })}
+                className="hero-btn"
+                style={{
+                  fontSize: '11px',
+                  padding: '4px 10px',
+                  backgroundColor: config.glowEnabled ? '#16a34a' : '#94a3b8',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                {config.glowEnabled ? 'Glow Enabled' : 'Glow Disabled'}
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              {/* Glow Blur Radius */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Glow Blur Amount</span>
+                  <span>{config.glowBlur ?? 55}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="120"
+                  step="2"
+                  value={config.glowBlur ?? 55}
+                  onChange={(e) => setConfig({ ...config, glowBlur: parseInt(e.target.value) })}
+                  style={{ width: '100%', height: '6px', accentColor: '#eab308', cursor: 'pointer' }}
+                />
+              </div>
+
+              {/* Glow Intensity / Opacity */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Glow Intensity / Opacity</span>
+                  <span>{Math.round((config.glowIntensity ?? 0.95) * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.0"
+                  max="1.0"
+                  step="0.05"
+                  value={config.glowIntensity ?? 0.95}
+                  onChange={(e) => setConfig({ ...config, glowIntensity: parseFloat(e.target.value) })}
+                  style={{ width: '100%', height: '6px', accentColor: '#eab308', cursor: 'pointer' }}
+                />
+              </div>
+
+              {/* Glow Color */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Glow Aura Color</label>
+                <input
+                  type="color"
+                  value={config.glowColor || '#FFFFFF'}
+                  onChange={(e) => setConfig({ ...config, glowColor: e.target.value })}
+                  style={{ height: '32px', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+                />
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

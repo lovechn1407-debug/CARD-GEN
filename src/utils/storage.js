@@ -17,6 +17,10 @@ export const DEFAULT_TEMPLATE_CONFIG = {
   desigQuotes: true,         // Include " " quotes around designation
   fadeStartY: 0.46,          // Black overlay starting height
   fadeOpacity: 1.0,          // Overlay opacity
+  glowEnabled: true,         // Member photo aura glow enabled
+  glowBlur: 55,              // Glow blur amount in px
+  glowIntensity: 0.95,       // Glow opacity / intensity (0.0 - 1.0)
+  glowColor: '#FFFFFF',      // Glow color hex
   showRefGuide: false,       // Reference ID card overlay guide toggle
   refGuideOpacity: 0.4       // Reference guide opacity
 };

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import JSZip from 'jszip';
 import { CARD_WIDTH, CARD_HEIGHT } from '../components/IDCardCanvas';
+import { getTemplateConfig } from './storage';
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -20,6 +21,7 @@ export async function renderMemberCardCanvas(member) {
   canvas.width = CARD_WIDTH;
   canvas.height = CARD_HEIGHT;
   const ctx = canvas.getContext('2d');
+  const cfg = getTemplateConfig();
 
   let bgImg = null;
   let fadeImg = null;
@@ -41,7 +43,7 @@ export async function renderMemberCardCanvas(member) {
       photoImg = await loadImage(member.photoUrl);
     } catch (e) {
       try {
-        photoImg = await loadImage('https://i.imgur.com/8Q9Z5b4.png');
+        photoImg = await loadImage('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80');
       } catch (err) {}
     }
   }
@@ -71,19 +73,27 @@ export async function renderMemberCardCanvas(member) {
     const drawWidth = 430;
     const drawHeight = drawWidth / aspect;
 
-    // PASS 1: Intense White Aura Backlight Glow behind transparent PNG cutout
-    ctx.save();
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
-    ctx.shadowBlur = 55;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.drawImage(photoImg, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-    ctx.drawImage(photoImg, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-    ctx.restore();
+    const isGlowOn = cfg.glowEnabled ?? true;
+    const blurAmt = cfg.glowBlur ?? 55;
+    const intensity = cfg.glowIntensity ?? 0.95;
+    const glowCol = cfg.glowColor || '#FFFFFF';
+
+    // PASS 1: Aura Backlight Glow
+    if (isGlowOn && intensity > 0 && blurAmt > 0) {
+      ctx.save();
+      ctx.shadowColor = glowCol;
+      ctx.shadowBlur = blurAmt;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.globalAlpha = intensity;
+      ctx.drawImage(photoImg, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+      ctx.drawImage(photoImg, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+      ctx.restore();
+    }
 
     // PASS 2: Soft edge shadow for depth
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
     ctx.shadowBlur = 20;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 6;

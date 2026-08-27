@@ -112,19 +112,27 @@ export default function IDCardCanvas({
       const drawWidth = 430;
       const drawHeight = drawWidth / aspect;
 
-      // PASS 1: Intense White Aura Backlight Glow behind transparent PNG cutout
-      ctx.save();
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
-      ctx.shadowBlur = 55;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-      ctx.drawImage(photoImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-      ctx.drawImage(photoImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-      ctx.restore();
+      const isGlowOn = cfg.glowEnabled ?? true;
+      const blurAmt = cfg.glowBlur ?? 55;
+      const intensity = cfg.glowIntensity ?? 0.95;
+      const glowCol = cfg.glowColor || '#FFFFFF';
+
+      // PASS 1: Dynamic Aura Backlight Glow behind transparent PNG cutout
+      if (isGlowOn && intensity > 0 && blurAmt > 0) {
+        ctx.save();
+        ctx.shadowColor = glowCol;
+        ctx.shadowBlur = blurAmt;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.globalAlpha = intensity;
+        ctx.drawImage(photoImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+        ctx.drawImage(photoImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+        ctx.restore();
+      }
 
       // PASS 2: Soft edge shadow for depth
       ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
       ctx.shadowBlur = 20;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 6;
