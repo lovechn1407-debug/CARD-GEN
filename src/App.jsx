@@ -12,6 +12,7 @@ import BulkCsvModal from './components/BulkCsvModal';
 import { 
   subscribeMembers, 
   subscribeBatches, 
+  subscribeTemplateConfig,
   saveMembers, 
   saveBatches, 
   updateMember, 
@@ -26,6 +27,7 @@ export default function App() {
 
   const [members, setMembers] = useState([]);
   const [batches, setBatches] = useState([]);
+  const [templateConfig, setTemplateConfig] = useState(getTemplateConfig());
   const [user, setUser] = useState(null);
   // authLoading = true while Firebase resolves auth state (handles redirect login restore)
   const [authLoading, setAuthLoading] = useState(true);
@@ -43,6 +45,7 @@ export default function App() {
 
     const unsubMembers = subscribeMembers((list) => setMembers(list));
     const unsubBatches = subscribeBatches((list) => setBatches(list));
+    const unsubConfig = subscribeTemplateConfig((cfg) => setTemplateConfig(cfg));
 
     const handleHashChange = () => setCurrentRoute(window.location.hash || '#/');
     window.addEventListener('hashchange', handleHashChange);
@@ -51,6 +54,7 @@ export default function App() {
       unsubAuth();
       unsubMembers();
       unsubBatches();
+      unsubConfig();
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);

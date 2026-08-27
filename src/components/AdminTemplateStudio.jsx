@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import FlippableIDCard from './FlippableIDCard';
-import { getTemplateConfig, saveTemplateConfig, DEFAULT_TEMPLATE_CONFIG } from '../utils/storage';
+import { getTemplateConfig, saveTemplateConfig, subscribeTemplateConfig, DEFAULT_TEMPLATE_CONFIG } from '../utils/storage';
 import { uploadToImgBB } from '../utils/imgbb';
 import { Sliders, Type, Layers, Eye, EyeOff, Save, RotateCcw, Check, Upload, FileText } from 'lucide-react';
 
@@ -10,6 +10,14 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
   const [selectedMemberIndex, setSelectedMemberIndex] = useState(0);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isUploadingSign, setIsUploadingSign] = useState(false);
+
+  // Load real config from Firebase Realtime Database (not in-memory defaults)
+  useEffect(() => {
+    const unsub = subscribeTemplateConfig((dbConfig) => {
+      setConfig(dbConfig);
+    });
+    return () => unsub && unsub();
+  }, []);
 
   const handleDirectorSignUpload = async (e) => {
     const file = e.target.files?.[0];
