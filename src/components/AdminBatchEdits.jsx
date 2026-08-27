@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeBatchEdits, approveBatchEdit, saveBatches, updateMember } from '../utils/storage';
 import IDCardCanvas from './IDCardCanvas';
-import { Link2, Copy, Check, Eye, Users, Clock, ShieldCheck, Sparkles, Plus, Search, X } from 'lucide-react';
+import { Link2, Copy, Check, Eye, Users, Clock, ShieldCheck, Sparkles, Plus, Search, X, Phone } from 'lucide-react';
 
 export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
   const [selectedBatch, setSelectedBatch] = useState(null);
@@ -15,6 +15,9 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
   const [selectedMemberIds, setSelectedMemberIds] = useState([]);
   const [memberSearch, setMemberSearch] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  // Batch Detail Modal Search State
+  const [batchDetailSearch, setBatchDetailSearch] = useState('');
 
   useEffect(() => {
     const unsub = subscribeBatchEdits((list) => setBatchEdits(list));
@@ -99,11 +102,33 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
     }
   };
 
-  const filteredMembersList = members.filter((m) =>
-    m.name?.toLowerCase().includes(memberSearch.toLowerCase()) ||
-    m.collegeRollNo?.toLowerCase().includes(memberSearch.toLowerCase()) ||
-    m.designation?.toLowerCase().includes(memberSearch.toLowerCase())
-  );
+  // Search filter for Create Modal (Name, Phone, Designation, Roll No)
+  const filteredMembersList = members.filter((m) => {
+    const q = memberSearch.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      m.name?.toLowerCase().includes(q) ||
+      m.collegeRollNo?.toLowerCase().includes(q) ||
+      m.designation?.toLowerCase().includes(q) ||
+      m.phone?.toLowerCase().includes(q)
+    );
+  });
+
+  // Search filter for Batch Detail Modal
+  const getBatchMembersList = (bId) => {
+    return members
+      .filter((m) => m.batchId === bId)
+      .filter((m) => {
+        const q = batchDetailSearch.toLowerCase().trim();
+        if (!q) return true;
+        return (
+          m.name?.toLowerCase().includes(q) ||
+          m.collegeRollNo?.toLowerCase().includes(q) ||
+          m.designation?.toLowerCase().includes(q) ||
+          m.phone?.toLowerCase().includes(q)
+        );
+      });
+  };
 
   const card = {
     background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px',
@@ -193,7 +218,7 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
 
               {/* See Edits Button */}
               <button
-                onClick={() => setSelectedBatch(batch)}
+                onClick={() => { setBatchDetailSearch(''); setSelectedBatch(batch); }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
               >
                 <Eye style={{ width: 15, height: 15 }} /> See Batch Edits ({editsForBatch.length})
@@ -206,7 +231,7 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
       {/* CREATE NEW BATCH LINK MODAL */}
       {showCreateModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.6)', overflowY: 'auto' }}>
-          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', width: '100%', maxWidth: '540px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', width: '100%', maxWidth: '560px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
             
             {/* Modal Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
@@ -256,11 +281,12 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
                   </button>
                 </div>
 
+                {/* Search Bar for Member Selection */}
                 <div style={{ position: 'relative', marginBottom: '8px' }}>
                   <Search style={{ width: 14, height: 14, color: '#94a3b8', position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
-                    placeholder="Search member name or roll no..."
+                    placeholder="Search by name, designation, phone, or roll no..."
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
                     style={{ width: '100%', padding: '7px 10px 7px 30px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', boxSizing: 'border-box' }}
@@ -269,14 +295,19 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
 
                 <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px' }}>
                   {filteredMembersList.map((m) => (
-                    <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', userSelect: 'none', background: selectedMemberIds.includes(m.id) ? '#eff6ff' : 'transparent' }}>
+                    <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', userSelect: 'none', background: selectedMemberIds.includes(m.id) ? '#eff6ff' : 'transparent', borderBottom: '1px solid #f1f5f9' }}>
                       <input
                         type="checkbox"
                         checked={selectedMemberIds.includes(m.id)}
                         onChange={() => handleToggleMember(m.id)}
                       />
-                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{m.name}</span>
-                      <span style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>({m.collegeRollNo})</span>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{m.name}</span>
+                        <span style={{ fontSize: '11px', color: '#475569', fontStyle: 'italic' }}>
+                          {m.designation} {m.phone ? ` • 📞 ${m.phone}` : ''}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '10px', color: '#1d4ed8', fontFamily: 'monospace' }}>({m.collegeRollNo})</span>
                     </label>
                   ))}
                 </div>
@@ -298,42 +329,58 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
       {/* Batch Detail Modal */}
       {selectedBatch && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.6)', overflowY: 'auto' }}>
-          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', width: '100%', maxWidth: '900px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', width: '100%', maxWidth: '940px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
             
-            {/* Modal Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                  Batch Edit Status: {selectedBatch.name}
-                </h3>
-                <p style={{ fontSize: '11px', fontFamily: 'monospace', color: '#64748b', marginTop: '2px' }}>
-                  {getPublicLink(selectedBatch.batchId)}
-                </p>
+            {/* Modal Header with Search */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                    Batch Edit Status: {selectedBatch.name}
+                  </h3>
+                  <p style={{ fontSize: '11px', fontFamily: 'monospace', color: '#64748b', marginTop: '2px' }}>
+                    {getPublicLink(selectedBatch.batchId)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedBatch(null)}
+                  style={{ padding: '7px 14px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#334155' }}
+                >
+                  Close
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedBatch(null)}
-                style={{ padding: '7px 14px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#334155' }}
-              >
-                Close
-              </button>
+
+              {/* Search input in Batch Detail */}
+              <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+                <Search style={{ width: 14, height: 14, color: '#94a3b8', position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Search by name, designation, phone, or roll no..."
+                  value={batchDetailSearch}
+                  onChange={(e) => setBatchDetailSearch(e.target.value)}
+                  style={{ width: '100%', padding: '7px 10px 7px 30px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', background: '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
             </div>
 
             {/* Modal Content - Table */}
             <div style={{ overflowY: 'auto', padding: '16px' }}>
-              {members.filter((m) => m.batchId === selectedBatch.batchId).length === 0 ? (
-                <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b', padding: '32px' }}>No members in this batch.</p>
+              {getBatchMembersList(selectedBatch.batchId).length === 0 ? (
+                <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b', padding: '32px' }}>
+                  {batchDetailSearch ? `No members match search "${batchDetailSearch}".` : 'No members in this batch.'}
+                </p>
               ) : (
                 <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                     <thead>
                       <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        {['Member Info', 'Edit Attempts', 'Status', 'Card Preview', 'Admin Action'].map(h => (
+                        {['Member Info & Phone', 'Edit Attempts', 'Status', 'Card Preview', 'Admin Action'].map(h => (
                           <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {members.filter((m) => m.batchId === selectedBatch.batchId).map((member) => {
+                      {getBatchMembersList(selectedBatch.batchId).map((member) => {
                         const editItem = batchEdits.find(
                           (e) => e.batchId === selectedBatch.batchId && e.collegeRollNo === member.collegeRollNo
                         );
@@ -348,8 +395,13 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
                           >
                             <td style={{ padding: '10px 14px' }}>
                               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>{member.name}</div>
-                              <div style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', fontSize: '11px', color: '#64748b' }}>{member.designation}</div>
-                              <div style={{ fontSize: '10px', color: '#1d4ed8', fontFamily: 'monospace' }}>ID: {member.collegeRollNo}</div>
+                              <div style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', fontSize: '11px', color: '#475569' }}>{member.designation}</div>
+                              {member.phone && (
+                                <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
+                                  <Phone style={{ width: 11, height: 11 }} /> {member.phone}
+                                </div>
+                              )}
+                              <div style={{ fontSize: '10px', color: '#1d4ed8', fontFamily: 'monospace', marginTop: '2px' }}>ID: {member.collegeRollNo}</div>
                             </td>
                             <td style={{ padding: '10px 14px' }}>
                               {editCount > 0
