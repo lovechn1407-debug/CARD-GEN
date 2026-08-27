@@ -15,9 +15,10 @@ import {
   saveMembers, 
   saveBatches, 
   updateMember, 
-  deleteMember 
+  deleteMember,
+  getTemplateConfig
 } from './utils/storage';
-import { subscribeToAuth } from './utils/firebase';
+import { subscribeToAuth, isEmailAuthorized } from './utils/firebase';
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
@@ -70,15 +71,16 @@ export default function App() {
   if (currentRoute.startsWith('#/verify')) return <PublicVerifyPortal />;
   if (currentRoute.startsWith('#/public-edit')) return <PublicEditPortal />;
 
-  // Check if Admin user is authenticated via Google
-  const isAdminAuthenticated = user && !user.isAnonymous;
+  // Check if Admin user is signed in AND authorized
+  const cfg = getTemplateConfig();
+  const isAdminAuthenticated = user && !user.isAnonymous && isEmailAuthorized(user.email, cfg.allowedAdminEmail);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        user={user}
+        user={isAdminAuthenticated ? user : null}
         onOpenAddModal={() => setShowAddModal(true)}
         onOpenBulkModal={() => setShowBulkModal(true)}
       />
@@ -88,7 +90,7 @@ export default function App() {
         {activeTab === 'verify' && <PublicVerifyPortal />}
         {activeTab === 'edit-portal' && <PublicEditPortal />}
 
-        {/* Admin Features (Gated behind Google Authentication) */}
+        {/* Admin Features (Strictly Gated behind Single Authorized Gmail Authentication) */}
         {!isAdminAuthenticated && activeTab !== 'verify' && activeTab !== 'edit-portal' ? (
           <AdminLoginGate user={user} onAuthenticated={(u) => setUser(u)} />
         ) : (
@@ -119,12 +121,12 @@ export default function App() {
       <footer style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '20px', marginTop: 'auto' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '12px', color: '#64748b' }}>
           <div>
-            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Firebase Protected & Realtime Connected
+            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Firebase Realtime DB & Firestore Dual Synced
           </div>
           <div>
             Status:{' '}
-            <span style={{ fontWeight: 700, color: isAdminAuthenticated ? '#16a34a' : '#d97706' }}>
-              {isAdminAuthenticated ? `Admin Signed In (${user.email})` : 'Admin Authentication Required'}
+            <span style={{ fontWeight: 700, color: isAdminAuthenticated ? '#16a34a' : '#dc2626' }}>
+              {isAdminAuthenticated ? `Authorized Admin (${user.email})` : 'Authorized Gmail Access Required'}
             </span>
           </div>
         </div>

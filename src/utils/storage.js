@@ -1,15 +1,14 @@
-// Firebase Firestore Data Manager for CARD-GEN
-import { db, ensureAnonymousAuth } from './firebase';
+// Firebase Firestore & Realtime Database Sync Manager for CARD-GEN
+import { db, rtdb, ensureAnonymousAuth } from './firebase';
 import { 
   collection, 
   doc, 
-  getDoc, 
-  getDocs, 
   setDoc, 
   updateDoc, 
   deleteDoc, 
   onSnapshot 
 } from "firebase/firestore";
+import { ref as rtdbRef, set as rtdbSet, onValue as rtdbOnValue, remove as rtdbRemove } from "firebase/database";
 
 const MEMBERS_KEY = 'ecell_id_members_v1';
 const BATCHES_KEY = 'ecell_id_batches_v1';
@@ -35,7 +34,7 @@ export const DEFAULT_TEMPLATE_CONFIG = {
   showRefGuide: false,       // Reference ID card overlay guide toggle
   refGuideOpacity: 0.4,      // Reference guide opacity
   directorSignUrl: '',       // Custom Director PNG Signature URL
-  allowedAdminEmail: '',     // Single Authorized Admin Gmail Address
+  allowedAdminEmail: 'lovechn1407@gmail.com', // Authorized Admin Gmail Address
   backQrX: 42,               // Back QR Code X Position
   backQrY: 140,              // Back QR Code Y Position
   backQrSize: 195,           // Back QR Code Box Size in px
@@ -95,15 +94,28 @@ let cachedEdits = [];
 let cachedConfig = { ...DEFAULT_TEMPLATE_CONFIG };
 
 // -------------------------------------------------------------
-// REAL-TIME FIRESTORE SUBSCRIPTIONS (Cross-Device Realtime Sync)
+// REAL-TIME SUBSCRIPTIONS (Firestore & Realtime DB Sync)
 // -------------------------------------------------------------
 
 export function subscribeMembers(callback) {
   ensureAnonymousAuth();
+  // Subscribe to Realtime Database
+  const rtdbMembersRef = rtdbRef(rtdb, 'members');
+  rtdbOnValue(rtdbMembersRef, (snapshot) => {
+    const val = snapshot.val();
+    if (val) {
+      const list = Array.isArray(val) ? val : Object.values(val);
+      cachedMembers = list;
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(list));
+      callback(list);
+      return;
+    }
+  }, () => {});
+
+  // Subscribe to Firestore
   const membersRef = collection(db, "members");
   return onSnapshot(membersRef, (snapshot) => {
     if (snapshot.empty) {
-      // Auto seed Firestore if empty
       seedFirestoreData();
       return;
     }
@@ -115,7 +127,6 @@ export function subscribeMembers(callback) {
     localStorage.setItem(MEMBERS_KEY, JSON.stringify(list));
     callback(list);
   }, (err) => {
-    console.warn("Firestore members subscription warning:", err);
     callback(getMembersLocal());
   });
 }
@@ -135,8 +146,7 @@ export function subscribeBatches(callback) {
     cachedBatches = list;
     localStorage.setItem(BATCHES_KEY, JSON.stringify(list));
     callback(list);
-  }, (err) => {
-    console.warn("Firestore batches subscription warning:", err);
+  }, () => {
     callback(getBatchesLocal());
   });
 }
@@ -152,8 +162,7 @@ export function subscribeBatchEdits(callback) {
     cachedEdits = list;
     localStorage.setItem(BATCH_EDITS_KEY, JSON.stringify(list));
     callback(list);
-  }, (err) => {
-    console.warn("Firestore edits subscription warning:", err);
+  }, () => {
     callback(getBatchEditsLocal());
   });
 }
@@ -168,18 +177,16 @@ export function subscribeTemplateConfig(callback) {
       localStorage.setItem(TEMPLATE_CONFIG_KEY, JSON.stringify(data));
       callback(data);
     } else {
-      // Seed default config doc
       setDoc(configDocRef, DEFAULT_TEMPLATE_CONFIG).catch(() => {});
       callback(cachedConfig);
     }
-  }, (err) => {
-    console.warn("Firestore config subscription warning:", err);
+  }, () => {
     callback(getTemplateConfigLocal());
   });
 }
 
 // -------------------------------------------------------------
-// FIRESTORE READ & WRITE OPERATIONS
+// READ & WRITE OPERATIONS (Sync to BOTH Firestore & Realtime DB)
 // -------------------------------------------------------------
 
 export function getTemplateConfig() {
@@ -192,8 +199,9 @@ export async function saveTemplateConfig(config) {
   try {
     await ensureAnonymousAuth();
     await setDoc(doc(db, "config", "template_studio"), config);
+    await rtdbSet(rtdbRef(rtdb, 'config/template_studio'), config);
   } catch (err) {
-    console.error("Error saving template config to Firestore:", err);
+    console.error("Error saving template config to Firebase:", err);
   }
 }
 
@@ -216,8 +224,9 @@ export async function updateMember(updatedMember) {
   try {
     await ensureAnonymousAuth();
     await setDoc(doc(db, "members", updatedMember.id), updatedMember);
+    await rtdbSet(rtdbRef(rtdb, `members/${updatedMember.id}`), updatedMember);
   } catch (err) {
-    console.error("Error updating member in Firestore:", err);
+    console.error("Error updating member in Firebase:", err);
   }
   return cachedMembers;
 }
@@ -229,9 +238,10 @@ export async function saveMembers(membersList) {
     await ensureAnonymousAuth();
     for (const m of membersList) {
       await setDoc(doc(db, "members", m.id), m);
+      await rtdbSet(rtdbRef(rtdb, `members/${m.id}`), m);
     }
   } catch (err) {
-    console.error("Error saving members to Firestore:", err);
+    console.error("Error saving members to Firebase:", err);
   }
 }
 
@@ -241,8 +251,9 @@ export async function deleteMember(id) {
   try {
     await ensureAnonymousAuth();
     await deleteDoc(doc(db, "members", id));
+    await rtdbRemove(rtdbRef(rtdb, `members/${id}`));
   } catch (err) {
-    console.error("Error deleting member in Firestore:", err);
+    console.error("Error deleting member in Firebase:", err);
   }
   return cachedMembers;
 }
@@ -258,9 +269,10 @@ export async function saveBatches(batchesList) {
     await ensureAnonymousAuth();
     for (const b of batchesList) {
       await setDoc(doc(db, "batches", b.batchId), b);
+      await rtdbSet(rtdbRef(rtdb, `batches/${b.batchId}`), b);
     }
   } catch (err) {
-    console.error("Error saving batches to Firestore:", err);
+    console.error("Error saving batches to Firebase:", err);
   }
 }
 
@@ -296,8 +308,9 @@ export async function saveBatchEdit(editPayload) {
   try {
     await ensureAnonymousAuth();
     await setDoc(doc(db, "batch_edits", editId), record);
+    await rtdbSet(rtdbRef(rtdb, `batch_edits/${editId}`), record);
   } catch (err) {
-    console.error("Error saving batch edit to Firestore:", err);
+    console.error("Error saving batch edit to Firebase:", err);
   }
   return cachedEdits;
 }
@@ -314,28 +327,32 @@ export async function approveBatchEdit(batchId, collegeRollNo) {
     if (memberIndex !== -1) {
       if (editItem.photoUrl) cachedMembers[memberIndex].photoUrl = editItem.photoUrl;
       if (editItem.photoTransform) cachedMembers[memberIndex].photoTransform = editItem.photoTransform;
-      saveMembers(cachedMembers);
+      await saveMembers(cachedMembers);
     }
 
     try {
       await ensureAnonymousAuth();
       await updateDoc(doc(db, "batch_edits", editId), { status: 'CONFIRMED' });
+      await rtdbSet(rtdbRef(rtdb, `batch_edits/${editId}/status`), 'CONFIRMED');
     } catch (err) {}
   }
   return cachedEdits;
 }
 
-// Auto seed default data to Firestore if completely empty
+// Auto seed default data to both Firestore and Realtime Database
 async function seedFirestoreData() {
   try {
     await ensureAnonymousAuth();
     for (const m of DEFAULT_MEMBERS) {
       await setDoc(doc(db, "members", m.id), m);
+      await rtdbSet(rtdbRef(rtdb, `members/${m.id}`), m);
     }
     for (const b of DEFAULT_BATCHES) {
       await setDoc(doc(db, "batches", b.batchId), b);
+      await rtdbSet(rtdbRef(rtdb, `batches/${b.batchId}`), b);
     }
     await setDoc(doc(db, "config", "template_studio"), DEFAULT_TEMPLATE_CONFIG);
+    await rtdbSet(rtdbRef(rtdb, 'config/template_studio'), DEFAULT_TEMPLATE_CONFIG);
   } catch (e) {
     console.warn("Auto-seed error:", e);
   }

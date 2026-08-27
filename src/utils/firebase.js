@@ -8,6 +8,7 @@ import {
   onAuthStateChanged 
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 
 // User's Firebase Configuration
 const firebaseConfig = {
@@ -17,20 +18,48 @@ const firebaseConfig = {
   storageBucket: "id-gen-89427.firebasestorage.app",
   messagingSenderId: "903943050417",
   appId: "1:903943050417:web:bc252d1eb935e95003be90",
-  measurementId: "G-MG7CP5B03P"
+  measurementId: "G-MG7CP5B03P",
+  databaseURL: "https://id-gen-89427-default-rtdb.firebaseio.com"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const rtdb = getDatabase(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Sign in with Google Popup (For Admin)
-export async function loginWithGoogle() {
+// Hardcoded Allowed Admin Gmail Emails
+export const AUTHORIZED_ADMIN_EMAILS = [
+  "lovechn1407@gmail.com",
+  "lovechauhan1407@gmail.com",
+  "love.chauhan@ecell.in"
+];
+
+export function isEmailAuthorized(email, customAllowedEmail) {
+  if (!email) return false;
+  const lower = email.toLowerCase().trim();
+  if (customAllowedEmail && lower === customAllowedEmail.toLowerCase().trim()) return true;
+  return AUTHORIZED_ADMIN_EMAILS.some((e) => lower === e.toLowerCase().trim());
+}
+
+// Sign in with Google Popup (Strict Authorization Check)
+export async function loginWithGoogle(customAllowedEmail) {
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    const user = result.user;
+    if (!user || !user.email) {
+      await signOut(auth);
+      throw new Error("No email address returned from Google.");
+    }
+    
+    // Validate email
+    const authorized = isEmailAuthorized(user.email, customAllowedEmail);
+    if (!authorized && customAllowedEmail) {
+      await signOut(auth);
+      throw new Error(`Access Denied: "${user.email}" is NOT authorized. Only the registered Admin Gmail (${customAllowedEmail}) can access this site.`);
+    }
+    return user;
   } catch (error) {
     console.error("Google Sign-In Error:", error);
     throw error;
@@ -61,11 +90,6 @@ export async function logoutUser() {
 // Subscribe to Auth State Changes
 export function subscribeToAuth(callback) {
   return onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      // Auto sign-in anonymously if no user is active so Firestore rules pass seamlessly
-      ensureAnonymousAuth().then((anonUser) => callback(anonUser));
-    } else {
-      callback(user);
-    }
+    callback(user);
   });
 }
