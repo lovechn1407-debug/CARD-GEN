@@ -190,11 +190,11 @@ export default function PublicEditPortal() {
               </div>
             </div>
 
-            {/* 2-col layout */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '24px' }}>
-              {/* Card Canvas */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', background: '#f1f5f9', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', width: '300px' }}>
-                <div style={{ width: '270px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 12px 30px rgba(0,0,0,0.2)' }}>
+            {/* Responsive Layout: Card on Top, Controls Below on Mobile */}
+            <div className="edit-portal-grid">
+              {/* TOP: Card Canvas Preview */}
+              <div className="edit-portal-card-box">
+                <div style={{ width: '100%', maxWidth: '270px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 12px 30px rgba(0,0,0,0.2)' }}>
                   <IDCardCanvas
                     member={{ ...authenticatedMember, photoUrl, photoTransform }}
                     interactive={true}
@@ -207,8 +207,8 @@ export default function PublicEditPortal() {
                 </p>
               </div>
 
-              {/* Controls */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
+              {/* BOTTOM: Customization Controls */}
+              <div className="edit-portal-controls-box">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
                   {/* Opacity */}

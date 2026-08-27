@@ -342,3 +342,44 @@ body {
   .t-tilt-card { transform: none !important; transition: none !important; }
 }
 
+/* Public Edit Portal Responsive Layout */
+.edit-portal-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .edit-portal-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    align-items: start;
+    gap: 24px;
+  }
+}
+
+.edit-portal-card-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  width: 100%;
+  max-width: 320px;
+  box-sizing: border-box;
+}
+
+.edit-portal-controls-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+
