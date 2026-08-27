@@ -2,7 +2,9 @@ import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInAnonymously, 
   signOut, 
   onAuthStateChanged 
@@ -27,6 +29,11 @@ export const auth = getAuth(app);
 export const rtdb = getDatabase(app);
 export const googleProvider = new GoogleAuthProvider();
 
+// Custom Google Provider configuration to prevent COOP issues
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 // Hardcoded Allowed Admin Gmail Emails
 export const AUTHORIZED_ADMIN_EMAILS = [
   "lovechn1407@gmail.com",
@@ -41,27 +48,54 @@ export function isEmailAuthorized(email, customAllowedEmail) {
   return AUTHORIZED_ADMIN_EMAILS.some((e) => lower === e.toLowerCase().trim());
 }
 
-// Sign in with Google Popup (Strict Authorization Check)
+// Sign in with Google (Handles Popup & Redirect to bypass COOP warnings)
 export async function loginWithGoogle(customAllowedEmail) {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
+    let user = null;
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      user = result?.user;
+    } catch (popupErr) {
+      console.warn("Popup blocked or COOP warning, switching to Redirect mode:", popupErr);
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
+
     if (!user || !user.email) {
       await signOut(auth);
       throw new Error("No email address returned from Google.");
     }
     
-    // Validate email
+    // Validate email authorization
     const authorized = isEmailAuthorized(user.email, customAllowedEmail);
-    if (!authorized && customAllowedEmail) {
+    if (!authorized) {
       await signOut(auth);
-      throw new Error(`Access Denied: "${user.email}" is NOT authorized. Only the registered Admin Gmail (${customAllowedEmail}) can access this site.`);
+      throw new Error(`Access Denied: "${user.email}" is NOT authorized. Only the registered Admin Gmail (${customAllowedEmail || AUTHORIZED_ADMIN_EMAILS[0]}) can access this site.`);
     }
     return user;
   } catch (error) {
     console.error("Google Sign-In Error:", error);
     throw error;
   }
+}
+
+// Handle Redirect Login Result on App Launch
+export async function checkRedirectAuth(customAllowedEmail) {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      const user = result.user;
+      const authorized = isEmailAuthorized(user.email, customAllowedEmail);
+      if (!authorized) {
+        await signOut(auth);
+        throw new Error(`Access Denied: "${user.email}" is NOT authorized.`);
+      }
+      return user;
+    }
+  } catch (e) {
+    console.warn("Redirect Auth Check Warning:", e);
+  }
+  return null;
 }
 
 // Sign in Anonymously (For Verifiers & Public Users)

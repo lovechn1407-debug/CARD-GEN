@@ -18,7 +18,7 @@ import {
   deleteMember,
   getTemplateConfig
 } from './utils/storage';
-import { subscribeToAuth, isEmailAuthorized } from './utils/firebase';
+import { subscribeToAuth, isEmailAuthorized, checkRedirectAuth } from './utils/firebase';
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
@@ -32,10 +32,12 @@ export default function App() {
   const [showBulkModal, setShowBulkModal] = useState(false);
 
   useEffect(() => {
-    // 1. Subscribe to Firebase Auth
+    // 1. Subscribe to Firebase Auth & Handle Redirect Results
+    const cfg = getTemplateConfig();
+    checkRedirectAuth(cfg.allowedAdminEmail);
     const unsubAuth = subscribeToAuth((u) => setUser(u));
 
-    // 2. Real-time Firestore Subscriptions
+    // 2. Real-time Firebase Subscriptions
     const unsubMembers = subscribeMembers((list) => setMembers(list));
     const unsubBatches = subscribeBatches((list) => setBatches(list));
 
