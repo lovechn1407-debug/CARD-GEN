@@ -12,25 +12,26 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, onOpen
   ];
 
   return (
-    <header style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 40, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', gap: '16px' }}>
-          {/* Brand Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', shrink: 0 }}>
-            <div style={{ width: '40px', height: '40px', background: '#0072ce', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Bebas Neue, sans-serif', color: '#ffffff', fontSize: '22px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+    <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-4">
+          
+          {/* Brand Logo & College Title */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bebas text-white text-xl shadow-md tracking-wider">
               EC
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '18px', letterSpacing: '-0.5px' }}>CARD-GEN</span>
-                <span className="hero-badge hero-badge-blue" style={{ fontSize: '10px' }}>E-CELL V3</span>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-slate-900 text-lg tracking-tight">CARD-GEN</span>
+                <span className="hero-badge hero-badge-blue text-[10px]">E-CELL V3</span>
               </div>
-              <p style={{ fontSize: '11px', color: '#64748b', margin: 0, fontWeight: '500' }}>I.T.S Engineering College</p>
+              <p className="text-[11px] text-slate-500 font-medium leading-none">I.T.S Engineering College</p>
             </div>
           </div>
 
-          {/* Nav Tabs */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '4px', overflowX: 'auto' }}>
+          {/* Nav Tabs Bar */}
+          <nav className="hidden xl:flex items-center gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -38,23 +39,13 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, onOpen
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    whiteSpace: 'nowrap',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    backgroundColor: isActive ? '#eff6ff' : 'transparent',
-                    color: isActive ? '#1d4ed8' : '#475569',
-                    border: isActive ? '1px solid #bfdbfe' : '1px solid transparent'
-                  }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+                  }`}
                 >
-                  <Icon style={{ width: '16px', height: '16px', color: isActive ? '#0072ce' : '#94a3b8' }} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
                   {tab.label}
                 </button>
               );
@@ -62,14 +53,36 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, onOpen
           </nav>
 
           {/* Right Action Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', shrink: 0 }}>
-            <button onClick={onOpenAddModal} className="hero-btn hero-btn-primary" style={{ fontSize: '12px', padding: '6px 12px' }}>
-              <Plus style={{ width: '16px', height: '16px' }} /> Add Member
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={onOpenAddModal} className="hero-btn hero-btn-primary text-xs py-2 px-3">
+              <Plus className="w-4 h-4" /> <span>Add Member</span>
             </button>
-            <button onClick={onOpenBulkModal} className="hero-btn hero-btn-secondary" style={{ fontSize: '12px', padding: '6px 12px' }}>
-              <FileSpreadsheet style={{ width: '16px', height: '16px', color: '#16a34a' }} /> Bulk CSV
+            <button onClick={onOpenBulkModal} className="hero-btn hero-btn-secondary text-xs py-2 px-3">
+              <FileSpreadsheet className="w-4 h-4 text-green-600" /> <span>Bulk CSV</span>
             </button>
           </div>
+        </div>
+
+        {/* Secondary Navigation Row for Mid-size screens */}
+        <div className="xl:hidden flex items-center gap-1 py-2 border-t border-slate-100 overflow-x-auto text-xs scrollbar-none">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 bg-slate-100 hover:bg-slate-200'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </header>

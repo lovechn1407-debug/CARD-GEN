@@ -3,7 +3,7 @@ import IDCardCanvas from './IDCardCanvas';
 import AddMemberModal from './AddMemberModal';
 import BulkCsvModal from './BulkCsvModal';
 import CardEditorModal from './CardEditorModal';
-import { UserPlus, FileSpreadsheet, Search, SlidersHorizontal, Edit3, Trash2, ShieldCheck, CreditCard } from 'lucide-react';
+import { UserPlus, FileSpreadsheet, Search, SlidersHorizontal, Edit3, Trash2, CreditCard } from 'lucide-react';
 
 export default function AdminMembers({
   members,
@@ -20,7 +20,6 @@ export default function AdminMembers({
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
 
-  // Filtered members list
   const filteredMembers = members.filter((m) => {
     const matchesSearch =
       m.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -34,18 +33,22 @@ export default function AdminMembers({
 
   return (
     <div className="space-y-6">
-      {/* Top Action & Filter Toolbar */}
+      {/* Top Filter & Action Bar */}
       <div className="hero-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Search & Batch Select */}
+        {/* Search & Batch Dropdown */}
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          {/* Fixed Search Input Container */}
           <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Search className="w-4 h-4" />
+            </div>
             <input
               type="text"
               placeholder="Search name, roll no, role..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="hero-input pl-9"
+              className="hero-input"
+              style={{ paddingLeft: '2.25rem' }}
             />
           </div>
 
@@ -66,7 +69,7 @@ export default function AdminMembers({
           </div>
         </div>
 
-        {/* Create / Import Buttons */}
+        {/* Top Buttons */}
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
           <button onClick={() => setShowAddModal(true)} className="hero-btn hero-btn-primary text-xs">
             <UserPlus className="w-4 h-4" /> Add New Member
@@ -77,7 +80,7 @@ export default function AdminMembers({
         </div>
       </div>
 
-      {/* Members Cards Grid */}
+      {/* Member Cards Grid */}
       {filteredMembers.length === 0 ? (
         <div className="hero-card p-12 text-center space-y-3">
           <CreditCard className="w-12 h-12 text-slate-300 mx-auto" />
@@ -91,37 +94,37 @@ export default function AdminMembers({
           {filteredMembers.map((member) => (
             <div key={member.id} className="hero-card hero-card-hover p-4 flex flex-col justify-between space-y-4">
               {/* Card Canvas Thumbnail */}
-              <div className="relative group bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center p-2">
+              <div className="relative group bg-slate-900 rounded-xl overflow-hidden shadow-md flex items-center justify-center p-2 border border-slate-200">
                 <div className="w-full max-w-[240px]">
                   <IDCardCanvas member={member} interactive={false} overlayOpacity={1.0} />
                 </div>
 
-                {/* Quick Edit Hover Overlay */}
+                {/* Hover Quick Edit Overlay */}
                 <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-2xs">
                   <button
                     onClick={() => setEditingMember(member)}
-                    className="hero-btn hero-btn-primary text-xs py-1.5 px-3"
+                    className="hero-btn hero-btn-primary text-xs py-2 px-4 shadow-lg"
                   >
-                    <Edit3 className="w-3.5 h-3.5" /> Modify Card
+                    <Edit3 className="w-4 h-4" /> Modify Card
                   </button>
                 </div>
               </div>
 
-              {/* Member Meta Info */}
+              {/* Member Card Footer Info */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="hero-badge hero-badge-blue text-[10px]">
+                  <span className="hero-badge hero-badge-blue text-[10px] font-mono">
                     ID: {member.collegeRollNo || member.id}
                   </span>
                   <span className="hero-badge hero-badge-green text-[10px]">Verified</span>
                 </div>
-                <h4 className="font-bebas text-lg tracking-wide text-slate-900 leading-tight pt-1">
+                <h4 className="font-bebas text-xl font-bold tracking-wide text-slate-900 leading-tight pt-1">
                   {member.name}
                 </h4>
                 <p className="font-poppins italic text-xs text-slate-600 truncate">{member.designation}</p>
               </div>
 
-              {/* Bottom Quick Actions */}
+              {/* Quick Actions */}
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                 <button
                   onClick={() => setEditingMember(member)}
@@ -150,18 +153,14 @@ export default function AdminMembers({
       {showAddModal && (
         <AddMemberModal
           onClose={() => setShowAddModal(false)}
-          onAddMember={(newM) => {
-            onAddMember(newM);
-          }}
+          onAddMember={(newM) => onAddMember(newM)}
         />
       )}
 
       {showBulkModal && (
         <BulkCsvModal
           onClose={() => setShowBulkModal(false)}
-          onImportSuccess={(newMembers, newBatch) => {
-            onImportBatch(newMembers, newBatch);
-          }}
+          onImportSuccess={(newMembers, newBatch) => onImportBatch(newMembers, newBatch)}
         />
       )}
 
@@ -169,9 +168,7 @@ export default function AdminMembers({
         <CardEditorModal
           member={editingMember}
           onClose={() => setEditingMember(null)}
-          onSave={(updatedM) => {
-            onUpdateMember(updatedM);
-          }}
+          onSave={(updatedM) => onUpdateMember(updatedM)}
         />
       )}
     </div>

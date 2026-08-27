@@ -6,16 +6,16 @@ const BATCH_EDITS_KEY = 'ecell_id_batch_edits_v1';
 const TEMPLATE_CONFIG_KEY = 'ecell_id_template_config_v1';
 
 export const DEFAULT_TEMPLATE_CONFIG = {
-  nameY: 0.74,               // Name vertical position (0 to 1 ratio)
+  nameY: 0.74,               // Name vertical position
   nameFontSize: 72,          // Name font size in px
   nameLetterSpacing: 1,      // Name letter spacing in px
   nameColor: '#FFFFFF',      // Name text color
-  desigY: 0.83,              // Designation vertical position (0 to 1 ratio)
+  desigY: 0.83,              // Designation vertical position
   desigFontSize: 32,         // Designation font size in px
   desigLetterSpacing: 0,     // Designation letter spacing in px
   desigColor: '#FFFFFF',     // Designation text color
   desigQuotes: true,         // Include " " quotes around designation
-  fadeStartY: 0.46,          // Black overlay starting height (0 to 1 ratio)
+  fadeStartY: 0.46,          // Black overlay starting height
   fadeOpacity: 1.0,          // Overlay opacity
   showRefGuide: false,       // Reference ID card overlay guide toggle
   refGuideOpacity: 0.4       // Reference guide opacity
@@ -35,7 +35,7 @@ export function saveTemplateConfig(config) {
   localStorage.setItem(TEMPLATE_CONFIG_KEY, JSON.stringify(config));
 }
 
-// Sample initial member data
+// Sample initial member data with reliable working portrait photos
 const DEFAULT_MEMBERS = [
   {
     id: 'ECELL2026-001',
@@ -45,7 +45,7 @@ const DEFAULT_MEMBERS = [
     validTill: '2026-08-31',
     phone: '+91 9876543210',
     bloodGroup: 'O+',
-    photoUrl: 'https://i.imgur.com/8Q9Z5b4.png',
+    photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
     batchId: 'BATCH-DEFAULT-2026',
     photoTransform: { x: 0, y: -20, scale: 1.05, rotation: 0 },
     createdAt: new Date().toISOString()
@@ -72,7 +72,15 @@ export function getMembers() {
     return DEFAULT_MEMBERS;
   }
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    // Auto-fix broken imgur URLs in stored local data if present
+    const fixed = parsed.map(m => {
+      if (m.photoUrl && m.photoUrl.includes('imgur')) {
+        return { ...m, photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80' };
+      }
+      return m;
+    });
+    return fixed;
   } catch (e) {
     return DEFAULT_MEMBERS;
   }
