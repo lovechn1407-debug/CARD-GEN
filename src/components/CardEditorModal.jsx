@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import { uploadToImgBB } from '../utils/imgbb';
-import { X, ZoomIn, ZoomOut, Move, RotateCw, Eye, EyeOff, Upload, Check, RefreshCw, User, Mail, GraduationCap } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Move, RotateCw, Eye, EyeOff, Upload, Check, RefreshCw, User, Type } from 'lucide-react';
 
 const sliderStyle = { width: '100%', height: '5px', accentColor: '#1d4ed8', cursor: 'pointer' };
 const sectionCard = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' };
@@ -24,7 +24,9 @@ export default function CardEditorModal({ member, onClose, onSave }) {
     section: member?.section || 'A',
     email: member?.email || '',
     phone: member?.phone || '',
-    bloodGroup: member?.bloodGroup || 'O+'
+    bloodGroup: member?.bloodGroup || 'O+',
+    nameMode: member?.nameMode || 'AUTO',
+    nameFontSizeScale: member?.nameFontSizeScale || 1.0
   });
 
   const handleToggleSeeThrough = () => {
@@ -54,7 +56,7 @@ export default function CardEditorModal({ member, onClose, onSave }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
           <div>
             <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>Modify Member ID Card & Details</h3>
-            <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>Adjust photo positioning or update member information (Year, Branch, Section, Email).</p>
+            <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>Reposition photo, adjust long name display (auto-fit or 2 lines), or update info.</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#94a3b8' }}>
             <X style={{ width: 18, height: 18 }} />
@@ -115,6 +117,41 @@ export default function CardEditorModal({ member, onClose, onSave }) {
                   <div>
                     <label style={lblStyle}>Email ID</label>
                     <input type="email" placeholder="student@gmail.com" value={memberData.email} onChange={(e) => setMemberData({ ...memberData, email: e.target.value })} style={inpStyle} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Long Name Handling & Formatting */}
+              <div style={sectionCard}>
+                <div style={rowBetween}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Type style={{ width: 13, height: 13 }} /> Name Layout & Long Name Options
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <label style={lblStyle}>Display Mode</label>
+                    <select
+                      value={memberData.nameMode || 'AUTO'}
+                      onChange={(e) => setMemberData({ ...memberData, nameMode: e.target.value })}
+                      style={inpStyle}
+                    >
+                      <option value="AUTO">⚡ Auto-Fit (Shrink if Long)</option>
+                      <option value="TWO_LINES">🥞 Wrap into 2 Lines</option>
+                      <option value="CUSTOM">🎚️ Custom Font Scale</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lblStyle}>Font Size Scale ({((memberData.nameFontSizeScale || 1.0) * 100).toFixed(0)}%)</label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="1.5"
+                      step="0.05"
+                      value={memberData.nameFontSizeScale || 1.0}
+                      onChange={(e) => setMemberData({ ...memberData, nameFontSizeScale: parseFloat(e.target.value) })}
+                      style={sliderStyle}
+                    />
                   </div>
                 </div>
               </div>

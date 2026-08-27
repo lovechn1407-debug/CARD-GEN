@@ -218,14 +218,58 @@ export default function IDCardCanvas({
     ctx.save();
     ctx.textAlign = 'center';
 
-    // 4A. MEMBER NAME
-    const nameText = (member?.name || 'MEMBER NAME').toUpperCase();
-    const nameSize = cfg.nameFontSize || 72;
-    ctx.font = `normal ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
+    // 4A. MEMBER NAME (With Auto-Fit Font Scaling & 2-Line Wrap support)
+    const rawName = (member?.name || 'MEMBER NAME').toUpperCase().trim();
+    let nameSize = (cfg.nameFontSize || 72) * (member?.nameFontSizeScale || 1.0);
+    const maxAllowedWidth = CARD_WIDTH - 60; // 548px max printable width
+    const nameYPos = CARD_HEIGHT * (cfg.nameY ?? 0.74);
+    const nameMode = member?.nameMode || 'AUTO'; // 'AUTO', 'TWO_LINES', 'CUSTOM'
+
     ctx.fillStyle = cfg.nameColor || '#FFFFFF';
     ctx.letterSpacing = `${cfg.nameLetterSpacing ?? 1}px`;
-    const nameYPos = CARD_HEIGHT * (cfg.nameY ?? 0.74);
-    ctx.fillText(nameText, CARD_WIDTH / 2, nameYPos);
+
+    if (nameMode === 'TWO_LINES' || (nameMode === 'AUTO' && member?.nameWrap)) {
+      // Split into 2 lines
+      const words = rawName.split(' ');
+      let line1 = rawName;
+      let line2 = '';
+
+      if (words.length > 1) {
+        const mid = Math.ceil(words.length / 2);
+        line1 = words.slice(0, mid).join(' ');
+        line2 = words.slice(mid).join(' ');
+      }
+
+      const twoLineSize = Math.min(nameSize * 0.75, 52);
+      ctx.font = `normal ${twoLineSize}px "Bebas Neue", "Arial Black", sans-serif`;
+
+      let w1 = ctx.measureText(line1).width;
+      let w2 = line2 ? ctx.measureText(line2).width : 0;
+      let maxW = Math.max(w1, w2);
+      if (maxW > maxAllowedWidth) {
+        const scale = maxAllowedWidth / maxW;
+        ctx.font = `normal ${Math.floor(twoLineSize * scale)}px "Bebas Neue", "Arial Black", sans-serif`;
+      }
+
+      if (line2) {
+        ctx.fillText(line1, CARD_WIDTH / 2, nameYPos - twoLineSize * 0.4);
+        ctx.fillText(line2, CARD_WIDTH / 2, nameYPos + twoLineSize * 0.5);
+      } else {
+        ctx.fillText(line1, CARD_WIDTH / 2, nameYPos);
+      }
+    } else {
+      // Single line mode with AUTO-FIT scaling
+      ctx.font = `normal ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
+      let textWidth = ctx.measureText(rawName).width;
+
+      if (textWidth > maxAllowedWidth && nameMode !== 'CUSTOM') {
+        const fitSize = Math.floor(nameSize * (maxAllowedWidth / textWidth));
+        nameSize = Math.max(28, fitSize);
+        ctx.font = `normal ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
+      }
+
+      ctx.fillText(rawName, CARD_WIDTH / 2, nameYPos);
+    }
 
     // 4B. DESIGNATION
     const rawDesig = member?.designation || 'Creative Designing';
