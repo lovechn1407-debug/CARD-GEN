@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { getBatchEdits, approveBatchEdit } from '../utils/storage';
+import React, { useState, useEffect } from 'react';
+import { subscribeBatchEdits, approveBatchEdit } from '../utils/storage';
 import IDCardCanvas from './IDCardCanvas';
 import { Link2, Copy, Check, Eye, Users, Clock, ShieldCheck, Sparkles } from 'lucide-react';
 
@@ -7,7 +7,12 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [copiedToken, setCopiedToken] = useState(null);
 
-  const batchEdits = getBatchEdits();
+  const [batchEdits, setBatchEdits] = useState([]);
+
+  useEffect(() => {
+    const unsub = subscribeBatchEdits((list) => setBatchEdits(list));
+    return () => unsub && unsub();
+  }, []);
 
   const getPublicLink = (batchId) =>
     `${window.location.origin}${window.location.pathname}#/public-edit?batch=${encodeURIComponent(batchId)}`;
