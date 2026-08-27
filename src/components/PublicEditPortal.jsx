@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import { getMembers, saveBatchEdit } from '../utils/storage';
 import { uploadToImgBB } from '../utils/imgbb';
-import { ShieldCheck, Search, Eye, EyeOff, ZoomIn, ZoomOut, Move, RotateCw, Upload, CheckCircle2, Lock, ArrowRight, RefreshCw, Image, X, Phone } from 'lucide-react';
+import { ShieldCheck, Search, Eye, EyeOff, ZoomIn, ZoomOut, Move, RotateCw, Upload, CheckCircle2, ArrowRight, RefreshCw, Image, Phone, UserCheck } from 'lucide-react';
 
 const sliderStyle = { width: '100%', height: '5px', accentColor: '#1d4ed8', cursor: 'pointer' };
 const sectionBox = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' };
@@ -27,31 +27,41 @@ export default function PublicEditPortal() {
     if (match?.[1]) setBatchId(decodeURIComponent(match[1]));
   }, []);
 
-  const handleSearchSubmit = (e) => {
-    if (e) e.preventDefault();
+  // Realtime Live Search Handler (triggers as user types!)
+  const handleLiveSearch = (inputVal) => {
+    setSearchQuery(inputVal);
     setAuthError('');
-    setMatchingMembers([]);
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return;
+    
+    const q = inputVal.trim().toLowerCase();
+    if (!q) {
+      setMatchingMembers([]);
+      return;
+    }
 
     const members = getMembers();
+    const cleanQ = q.replace(/\s+/g, '');
+
     const results = members.filter((m) => {
       const matchBatch = !batchId || m.batchId === batchId;
       if (!matchBatch) return false;
 
-      const matchRoll = m.collegeRollNo?.toLowerCase().includes(q);
-      const matchName = m.name?.toLowerCase().includes(q);
-      const matchPhone = m.phone?.toLowerCase().replace(/\s+/g, '').includes(q.replace(/\s+/g, ''));
+      const nameMatch = m.name?.toLowerCase().includes(q);
+      const rollMatch = m.collegeRollNo?.toLowerCase().includes(q);
+      const desigMatch = m.designation?.toLowerCase().includes(q);
+      const phoneMatch = m.phone ? m.phone.replace(/\s+/g, '').includes(cleanQ) : false;
 
-      return matchRoll || matchName || matchPhone;
+      return nameMatch || rollMatch || desigMatch || phoneMatch;
     });
 
-    if (results.length === 1) {
-      selectMemberToEdit(results[0]);
-    } else if (results.length > 1) {
-      setMatchingMembers(results);
-    } else {
-      setAuthError(`No member card found matching "${searchQuery}". Please check your Name, Phone Number, or Roll No.`);
+    setMatchingMembers(results);
+  };
+
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (matchingMembers.length === 1) {
+      selectMemberToEdit(matchingMembers[0]);
+    } else if (matchingMembers.length === 0) {
+      setAuthError(`No member card found matching "${searchQuery}". Please search by Name, Phone Number, or Roll No.`);
     }
   };
 
@@ -131,20 +141,20 @@ export default function PublicEditPortal() {
       <main style={{ flex: 1, maxWidth: '960px', margin: '0 auto', width: '100%', padding: '30px 16px', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
 
         {!authenticatedMember ? (
-          /* Search / Auth Form */
-          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '32px 24px', maxWidth: '460px', width: '100%', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+          /* Realtime Live Search / Auth Form */
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '32px 24px', maxWidth: '480px', width: '100%', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
             <div style={{ textAlign: 'center', marginBottom: '20px' }}>
               <div style={{ width: 52, height: 52, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <Search style={{ width: 22, height: 22, color: '#1d4ed8' }} />
               </div>
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>Find Your E-Cell ID Card</h2>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Search by Name, Phone Number, or Roll No to edit your card.</p>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Type your Name, Phone Number, or Roll No to load your card.</p>
             </div>
 
             <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#334155', marginBottom: '5px', textTransform: 'uppercase' }}>
-                  Name, Phone Number, or Roll No
+                  Search Name, Phone Number, or Roll No
                 </label>
                 <div style={{ position: 'relative' }}>
                   <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8' }}>
@@ -153,9 +163,9 @@ export default function PublicEditPortal() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Love Chauhan, 9876543210, or Roll No"
+                    placeholder="Type name (e.g. Love), phone, or roll no..."
                     value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setMatchingMembers([]); setAuthError(''); }}
+                    onChange={(e) => handleLiveSearch(e.target.value)}
                     style={{ width: '100%', padding: '10px 12px 10px 32px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
@@ -166,20 +176,16 @@ export default function PublicEditPortal() {
                   {authError}
                 </div>
               )}
-
-              <button type="submit" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '11px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-                Search & Edit Card <ArrowRight style={{ width: 15, height: 15 }} />
-              </button>
             </form>
 
-            {/* Multiple Search Results Display */}
+            {/* LIVE AUTO-COMPLETE SEARCH RESULTS LIST */}
             {matchingMembers.length > 0 && (
-              <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                  Multiple cards found ({matchingMembers.length}). Select yours to edit:
+              <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <UserCheck style={{ width: 13, height: 13 }} /> Matching Cards ({matchingMembers.length}) — Click to Edit:
                 </div>
 
-                <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ maxHeight: '260px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {matchingMembers.map((m) => (
                     <div
                       key={m.id}
@@ -189,7 +195,7 @@ export default function PublicEditPortal() {
                       onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
                     >
                       <div>
-                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '17px', fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>{m.name}</div>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '18px', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>{m.name}</div>
                         <div style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', fontSize: '11px', color: '#475569' }}>{m.designation}</div>
                         {m.phone && (
                           <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
@@ -217,7 +223,7 @@ export default function PublicEditPortal() {
             <p style={{ fontSize: '12px', color: '#475569', lineHeight: 1.6 }}>
               Thank you, <strong style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '14px', color: '#0f172a' }}>{authenticatedMember.name}</strong>! Your updated photo positioning has been submitted for admin review.
             </p>
-            <button onClick={() => { setIsSubmitted(false); setAuthenticatedMember(null); setSearchQuery(''); }}
+            <button onClick={() => { setIsSubmitted(false); setAuthenticatedMember(null); setSearchQuery(''); setMatchingMembers([]); }}
               style={{ marginTop: '20px', padding: '9px 18px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
               Edit Another Card
             </button>
@@ -232,7 +238,7 @@ export default function PublicEditPortal() {
                 <span style={{ display: 'inline-block', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', marginBottom: '4px' }}>
                   Verified: {authenticatedMember.collegeRollNo}
                 </span>
-                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '28px', fontWeight: 700, color: '#0f172a', margin: '0 0 2px', letterSpacing: '1px' }}>{authenticatedMember.name}</h2>
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '28px', fontWeight 700, color: '#0f172a', margin: '0 0 2px', letterSpacing: '1px' }}>{authenticatedMember.name}</h2>
                 <p style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', margin: 0 }}>{authenticatedMember.designation}</p>
               </div>
               

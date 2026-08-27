@@ -295,6 +295,20 @@ export async function approveBatchEdit(batchId, collegeRollNo) {
   return cachedEdits;
 }
 
+export async function declineBatchEdit(batchId, collegeRollNo) {
+  const editId = `${batchId}_${collegeRollNo}`.replace(/[^a-zA-Z0-9_]/g, '_');
+  const editItem = cachedEdits.find((e) => e.batchId === batchId && e.collegeRollNo === collegeRollNo);
+  
+  if (editItem) {
+    editItem.status = 'DECLINED';
+    try {
+      await ensureAnonymousAuth();
+      await rtdbSet(rtdbRef(rtdb, `batch_edits/${editId}/status`), 'DECLINED');
+    } catch (err) {}
+  }
+  return cachedEdits;
+}
+
 // Auto seed ONLY if data doesn't already exist (never overwrites user data)
 async function seedRealtimeDatabase() {
   try {

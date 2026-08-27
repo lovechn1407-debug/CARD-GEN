@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { subscribeBatchEdits, approveBatchEdit, saveBatches, updateMember } from '../utils/storage';
+import { subscribeBatchEdits, approveBatchEdit, declineBatchEdit, saveBatches, updateMember } from '../utils/storage';
 import IDCardCanvas from './IDCardCanvas';
-import { Link2, Copy, Check, Eye, Users, Clock, ShieldCheck, Sparkles, Plus, Search, X, Phone } from 'lucide-react';
+import { Link2, Copy, Check, Eye, Users, Clock, ShieldCheck, Sparkles, Plus, Search, X, Phone, XCircle, Filter } from 'lucide-react';
 
 export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
   const [selectedBatch, setSelectedBatch] = useState(null);
@@ -16,8 +16,9 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
   const [memberSearch, setMemberSearch] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
-  // Batch Detail Modal Search State
+  // Batch Detail Modal Search & Filter State
   const [batchDetailSearch, setBatchDetailSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'PENDING', 'CONFIRMED', 'INITIAL', 'DECLINED'
 
   useEffect(() => {
     const unsub = subscribeBatchEdits((list) => setBatchEdits(list));
@@ -35,6 +36,11 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
 
   const handleApprove = (batchId, collegeRollNo) => {
     approveBatchEdit(batchId, collegeRollNo);
+    if (onBatchUpdated) onBatchUpdated();
+  };
+
+  const handleDecline = (batchId, collegeRollNo) => {
+    declineBatchEdit(batchId, collegeRollNo);
     if (onBatchUpdated) onBatchUpdated();
   };
 
@@ -80,11 +86,9 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
         createdAt: new Date().toISOString()
       };
 
-      // 1. Save new batch to Firebase RTDB
       const updatedBatches = [newBatchObj, ...batches.filter((b) => b.batchId !== finalBatchId)];
       await saveBatches(updatedBatches);
 
-      // 2. Update selected members' batchId to this new batchId
       for (const mId of selectedMemberIds) {
         const mem = members.find((m) => m.id === mId);
         if (mem) {
@@ -102,7 +106,7 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
     }
   };
 
-  // Search filter for Create Modal (Name, Phone, Designation, Roll No)
+  // Search filter for Create Modal
   const filteredMembersList = members.filter((m) => {
     const q = memberSearch.toLowerCase().trim();
     if (!q) return true;
@@ -114,11 +118,21 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
     );
   });
 
-  // Search filter for Batch Detail Modal
+  // Filter for Batch Detail Modal (Search + Status Filter)
   const getBatchMembersList = (bId) => {
     return members
       .filter((m) => m.batchId === bId)
       .filter((m) => {
+        const editItem = batchEdits.find(
+          (e) => e.batchId === bId && e.collegeRollNo === m.collegeRollNo
+        );
+        const itemStatus = editItem?.status || 'INITIAL';
+
+        if (statusFilter === 'PENDING' && itemStatus !== 'PENDING') return false;
+        if (statusFilter === 'CONFIRMED' && itemStatus !== 'CONFIRMED') return false;
+        if (statusFilter === 'DECLINED' && itemStatus !== 'DECLINED') return false;
+        if (statusFilter === 'INITIAL' && editItem) return false;
+
         const q = batchDetailSearch.toLowerCase().trim();
         if (!q) return true;
         return (
@@ -145,7 +159,7 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
             <Sparkles style={{ width: 18, height: 18, color: '#1d4ed8' }} /> Public Batch Self-Edit System
           </h3>
           <p style={{ fontSize: '13px', color: '#475569', marginTop: '6px', margin: '6px 0 0' }}>
-            Generate public self-service links for member batches. Members enter their Roll No to adjust their photos. Review and approve edits here.
+            Generate public self-service links for member batches. Members enter their Roll No or Name to adjust their photos. Review and approve edits here.
           </p>
         </div>
         
@@ -218,7 +232,7 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
 
               {/* See Edits Button */}
               <button
-                onClick={() => { setBatchDetailSearch(''); setSelectedBatch(batch); }}
+                onClick={() => { setBatchDetailSearch(''); setStatusFilter('ALL'); setSelectedBatch(batch); }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
               >
                 <Eye style={{ width: 15, height: 15 }} /> See Batch Edits ({editsForBatch.length})
@@ -326,129 +340,207 @@ export default function AdminBatchEdits({ batches, members, onBatchUpdated }) {
         </div>
       )}
 
-      {/* Batch Detail Modal */}
-      {selectedBatch && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.6)', overflowY: 'auto' }}>
-          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', width: '100%', maxWidth: '940px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
-            
-            {/* Modal Header with Search */}
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                    Batch Edit Status: {selectedBatch.name}
-                  </h3>
-                  <p style={{ fontSize: '11px', fontFamily: 'monospace', color: '#64748b', marginTop: '2px' }}>
-                    {getPublicLink(selectedBatch.batchId)}
+      {/* BATCH DETAIL MODAL WITH SEARCH & STATUS FILTERS */}
+      {selectedBatch && (() => {
+        const batchMembers = members.filter((m) => m.batchId === selectedBatch.batchId);
+        const editsForBatch = batchEdits.filter((e) => e.batchId === selectedBatch.batchId);
+
+        const pendingCount = batchMembers.filter((m) => {
+          const e = editsForBatch.find((item) => item.collegeRollNo === m.collegeRollNo);
+          return e?.status === 'PENDING';
+        }).length;
+
+        const confirmedCount = batchMembers.filter((m) => {
+          const e = editsForBatch.find((item) => item.collegeRollNo === m.collegeRollNo);
+          return e?.status === 'CONFIRMED';
+        }).length;
+
+        const declinedCount = batchMembers.filter((m) => {
+          const e = editsForBatch.find((item) => item.collegeRollNo === m.collegeRollNo);
+          return e?.status === 'DECLINED';
+        }).length;
+
+        const initialCount = batchMembers.filter((m) => {
+          const e = editsForBatch.find((item) => item.collegeRollNo === m.collegeRollNo);
+          return !e;
+        }).length;
+
+        const displayedMembers = getBatchMembersList(selectedBatch.batchId);
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.6)', overflowY: 'auto' }}>
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', width: '100%', maxWidth: '980px', maxHeight: '92vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+              
+              {/* Modal Header with Search & Filter Tabs */}
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                      Batch Edit Status: {selectedBatch.name}
+                    </h3>
+                    <p style={{ fontSize: '11px', fontFamily: 'monospace', color: '#64748b', marginTop: '2px' }}>
+                      {getPublicLink(selectedBatch.batchId)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedBatch(null)}
+                    style={{ padding: '7px 14px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#334155' }}
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {/* Filter Tabs & Search Bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  {/* Status Filter Tab Buttons */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+                    {[
+                      { id: 'ALL', label: 'All Members', count: batchMembers.length },
+                      { id: 'PENDING', label: 'Pending Approval', count: pendingCount, color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+                      { id: 'CONFIRMED', label: 'Approved', count: confirmedCount, color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+                      { id: 'INITIAL', label: 'Initial State', count: initialCount, color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' },
+                      { id: 'DECLINED', label: 'Declined', count: declinedCount, color: '#dc2626', bg: '#fef2f2', border: '#fecaca' }
+                    ].map((tab) => {
+                      const isActive = statusFilter === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setStatusFilter(tab.id)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            border: isActive ? '2px solid #1d4ed8' : `1px solid ${tab.border || '#cbd5e1'}`,
+                            background: isActive ? '#eff6ff' : (tab.bg || '#fff'),
+                            color: isActive ? '#1d4ed8' : (tab.color || '#334155'),
+                            whiteSpace: 'nowrap',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          {tab.label} ({tab.count})
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Search input in Batch Detail */}
+                  <div style={{ position: 'relative', width: '100%', maxWidth: '280px' }}>
+                    <Search style={{ width: 14, height: 14, color: '#94a3b8', position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                      type="text"
+                      placeholder="Search name, phone, roll..."
+                      value={batchDetailSearch}
+                      onChange={(e) => setBatchDetailSearch(e.target.value)}
+                      style={{ width: '100%', padding: '6px 10px 6px 30px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', background: '#fff', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Content - Table */}
+              <div style={{ overflowY: 'auto', padding: '16px', flex: 1 }}>
+                {displayedMembers.length === 0 ? (
+                  <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b', padding: '40px' }}>
+                    No member records found matching status filter "{statusFilter}" {batchDetailSearch ? `or search "${batchDetailSearch}"` : ''}.
                   </p>
-                </div>
-                <button
-                  onClick={() => setSelectedBatch(null)}
-                  style={{ padding: '7px 14px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#334155' }}
-                >
-                  Close
-                </button>
-              </div>
+                ) : (
+                  <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                          {['Member Info & Phone', 'Edit Attempts', 'Status', 'Card Preview', 'Admin Actions'].map(h => (
+                            <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayedMembers.map((member) => {
+                          const editItem = batchEdits.find(
+                            (e) => e.batchId === selectedBatch.batchId && e.collegeRollNo === member.collegeRollNo
+                          );
+                          const editCount = editItem?.editCount || 0;
+                          const isPending = editItem?.status === 'PENDING';
+                          const isConfirmed = editItem?.status === 'CONFIRMED';
+                          const isDeclined = editItem?.status === 'DECLINED';
 
-              {/* Search input in Batch Detail */}
-              <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
-                <Search style={{ width: 14, height: 14, color: '#94a3b8', position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                  type="text"
-                  placeholder="Search by name, designation, phone, or roll no..."
-                  value={batchDetailSearch}
-                  onChange={(e) => setBatchDetailSearch(e.target.value)}
-                  style={{ width: '100%', padding: '7px 10px 7px 30px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', background: '#fff', boxSizing: 'border-box' }}
-                />
-              </div>
-            </div>
-
-            {/* Modal Content - Table */}
-            <div style={{ overflowY: 'auto', padding: '16px' }}>
-              {getBatchMembersList(selectedBatch.batchId).length === 0 ? (
-                <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b', padding: '32px' }}>
-                  {batchDetailSearch ? `No members match search "${batchDetailSearch}".` : 'No members in this batch.'}
-                </p>
-              ) : (
-                <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                    <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        {['Member Info & Phone', 'Edit Attempts', 'Status', 'Card Preview', 'Admin Action'].map(h => (
-                          <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getBatchMembersList(selectedBatch.batchId).map((member) => {
-                        const editItem = batchEdits.find(
-                          (e) => e.batchId === selectedBatch.batchId && e.collegeRollNo === member.collegeRollNo
-                        );
-                        const editCount = editItem?.editCount || 0;
-                        const isPending = editItem?.status === 'PENDING';
-                        const isConfirmed = editItem?.status === 'CONFIRMED';
-
-                        return (
-                          <tr key={member.id} style={{ borderBottom: '1px solid #f1f5f9' }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                          >
-                            <td style={{ padding: '10px 14px' }}>
-                              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>{member.name}</div>
-                              <div style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', fontSize: '11px', color: '#475569' }}>{member.designation}</div>
-                              {member.phone && (
-                                <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
-                                  <Phone style={{ width: 11, height: 11 }} /> {member.phone}
+                          return (
+                            <tr key={member.id} style={{ borderBottom: '1px solid #f1f5f9' }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <td style={{ padding: '10px 14px' }}>
+                                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>{member.name}</div>
+                                <div style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic', fontSize: '11px', color: '#475569' }}>{member.designation}</div>
+                                {member.phone && (
+                                  <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
+                                    <Phone style={{ width: 11, height: 11 }} /> {member.phone}
+                                  </div>
+                                )}
+                                <div style={{ fontSize: '10px', color: '#1d4ed8', fontFamily: 'monospace', marginTop: '2px' }}>ID: {member.collegeRollNo}</div>
+                              </td>
+                              <td style={{ padding: '10px 14px' }}>
+                                {editCount > 0
+                                  ? <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '20px', fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>{editCount}× edited</span>
+                                  : <span style={{ color: '#94a3b8', fontSize: '12px' }}>Not edited yet</span>
+                                }
+                              </td>
+                              <td style={{ padding: '10px 14px' }}>
+                                {isPending && <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', borderRadius: '20px', fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>Pending Approval</span>}
+                                {isConfirmed && <span style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '20px', fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>Confirmed ✓</span>}
+                                {isDeclined && <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '20px', fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>Declined ❌</span>}
+                                {!editItem && <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: '20px', fontSize: '11px', fontWeight: 600, padding: '2px 8px' }}>Initial State</span>}
+                              </td>
+                              <td style={{ padding: '10px 14px' }}>
+                                <div style={{ width: '60px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                  <IDCardCanvas
+                                    member={{ ...member, photoUrl: editItem?.photoUrl || member.photoUrl, photoTransform: editItem?.photoTransform || member.photoTransform }}
+                                    interactive={false} overlayOpacity={1.0}
+                                  />
                                 </div>
-                              )}
-                              <div style={{ fontSize: '10px', color: '#1d4ed8', fontFamily: 'monospace', marginTop: '2px' }}>ID: {member.collegeRollNo}</div>
-                            </td>
-                            <td style={{ padding: '10px 14px' }}>
-                              {editCount > 0
-                                ? <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '20px', fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>{editCount}× edited</span>
-                                : <span style={{ color: '#94a3b8', fontSize: '12px' }}>Not edited yet</span>
-                              }
-                            </td>
-                            <td style={{ padding: '10px 14px' }}>
-                              {isPending && <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', borderRadius: '20px', fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>Pending Approval</span>}
-                              {isConfirmed && <span style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '20px', fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>Confirmed ✓</span>}
-                              {!editItem && <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: '20px', fontSize: '11px', fontWeight: 600, padding: '2px 8px' }}>Initial State</span>}
-                            </td>
-                            <td style={{ padding: '10px 14px' }}>
-                              <div style={{ width: '60px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                                <IDCardCanvas
-                                  member={{ ...member, photoUrl: editItem?.photoUrl || member.photoUrl, photoTransform: editItem?.photoTransform || member.photoTransform }}
-                                  interactive={false} overlayOpacity={1.0}
-                                />
-                              </div>
-                            </td>
-                            <td style={{ padding: '10px 14px', textAlign: 'right' }}>
-                              {isPending ? (
-                                <button
-                                  onClick={() => handleApprove(selectedBatch.batchId, member.collegeRollNo)}
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
-                                >
-                                  <Check style={{ width: 13, height: 13 }} /> Approve
-                                </button>
-                              ) : isConfirmed ? (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: '#15803d' }}>
-                                  <ShieldCheck style={{ width: 14, height: 14 }} /> Approved
-                                </span>
-                              ) : (
-                                <span style={{ fontSize: '12px', color: '#94a3b8' }}>Awaiting Member</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                              </td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                                  {(isPending || isDeclined || !isConfirmed) && (
+                                    <button
+                                      onClick={() => handleApprove(selectedBatch.batchId, member.collegeRollNo)}
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                      title="Approve Member Card Photo"
+                                    >
+                                      <Check style={{ width: 13, height: 13 }} /> Approve
+                                    </button>
+                                  )}
+                                  
+                                  {(isPending || isConfirmed) && (
+                                    <button
+                                      onClick={() => handleDecline(selectedBatch.batchId, member.collegeRollNo)}
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                      title="Decline Member Card Photo"
+                                    >
+                                      <XCircle style={{ width: 13, height: 13 }} /> Decline
+                                    </button>
+                                  )}
+
+                                  {isConfirmed && !isPending && (
+                                    <span style={{ fontSize: '11px', color: '#15803d', fontWeight: 700 }}>✓ Active</span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
