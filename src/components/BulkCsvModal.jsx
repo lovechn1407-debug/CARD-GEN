@@ -13,20 +13,24 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
   const [batchName, setBatchName] = useState(`Batch ${new Date().toLocaleDateString('en-GB')}`);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
-  const [mappings, setMappings] = useState({ collegeRollNo: '', name: '', designation: '', validTill: '', phone: '', bloodGroup: '', photoUrl: '' });
+  const [mappings, setMappings] = useState({
+    collegeRollNo: '', name: '', designation: '',
+    year: '', branch: '', section: '', email: '',
+    validTill: '', phone: '', bloodGroup: '', photoUrl: ''
+  });
   const [imageFiles, setImageFiles] = useState([]);
 
   const handleDownloadSampleCsv = () => {
-    const csvContent = "CollegeRollNo,Name,Designation,ValidTill,Phone,BloodGroup,PhotoUrl\n" +
-      "2100290130085,LOVE CHAUHAN,Creative Designing,2026-08-31,9876543210,O+,https://i.imgur.com/8Q9Z5b4.png\n" +
-      "2100290130086,AARAV SHARMA,Technical Lead,2026-08-31,9876543211,A+,https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80\n" +
-      "2100290130087,ANANYA VERMA,Event Manager,2026-08-31,9876543212,B+,";
+    const csvContent = "CollegeRollNo,Name,Designation,Year,Branch,Section,Email,ValidTill,Phone,BloodGroup,PhotoUrl\n" +
+      "2100290130085,LOVE CHAUHAN,Creative Designing,3rd Year,CSE,A,love.chauhan@ecell.in,2026-08-31,9876543210,O+,https://i.imgur.com/8Q9Z5b4.png\n" +
+      "2100290130086,AARAV SHARMA,Technical Lead,4th Year,ECE,B,aarav.sharma@ecell.in,2026-08-31,9876543211,A+,\n" +
+      "2100290130087,ANANYA VERMA,Event Manager,2nd Year,IT,C,ananya.verma@ecell.in,2026-08-31,9876543212,B+,";
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'ecell_members_template.csv');
+    link.setAttribute('download', 'ecell_members_full_template.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -50,6 +54,10 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
             if (lower.includes('roll') || lower.includes('id')) autoMap.collegeRollNo = field;
             else if (lower.includes('name')) autoMap.name = field;
             else if (lower.includes('designation') || lower.includes('role')) autoMap.designation = field;
+            else if (lower.includes('year')) autoMap.year = field;
+            else if (lower.includes('branch') || lower.includes('dept')) autoMap.branch = field;
+            else if (lower.includes('sec')) autoMap.section = field;
+            else if (lower.includes('email') || lower.includes('mail')) autoMap.email = field;
             else if (lower.includes('valid') || lower.includes('date')) autoMap.validTill = field;
             else if (lower.includes('phone') || lower.includes('mobile')) autoMap.phone = field;
             else if (lower.includes('blood')) autoMap.bloodGroup = field;
@@ -71,7 +79,12 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
       const rollNo = (row[mappings.collegeRollNo] || `ROLL-${i + 1}`).toString().trim();
       const name = (row[mappings.name] || 'MEMBER').toString().trim();
       const desig = (row[mappings.designation] || 'E-Cell Team').toString().trim();
+      const year = (row[mappings.year] || '3rd Year').toString().trim();
+      const branch = (row[mappings.branch] || 'CSE').toString().trim();
+      const section = (row[mappings.section] || 'A').toString().trim();
+      const email = (row[mappings.email] || '').toString().trim();
       let photoUrl = row[mappings.photoUrl] || '';
+
       setProgressMsg(`Processing ${i + 1}/${parsedRows.length}: ${name}`);
       const matchedFile = imageFiles.find((f) => {
         const fname = f.name.toLowerCase();
@@ -81,7 +94,24 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
         try { photoUrl = await uploadToImgBB(matchedFile); } catch (e) {}
       }
       if (!photoUrl) photoUrl = '';
-      importedMembers.push({ id: `ECELL-${Date.now()}-${i}`, collegeRollNo: rollNo, name, designation: desig, validTill: row[mappings.validTill] || '2026-08-31', phone: row[mappings.phone] || '', bloodGroup: row[mappings.bloodGroup] || 'O+', photoUrl, batchId, photoTransform: { x: 0, y: -20, scale: 1, rotation: 0 }, createdAt: new Date().toISOString() });
+
+      importedMembers.push({
+        id: `ECELL-${Date.now()}-${i}`,
+        collegeRollNo: rollNo,
+        name,
+        designation: desig,
+        year,
+        branch,
+        section,
+        email,
+        validTill: row[mappings.validTill] || '2026-08-31',
+        phone: row[mappings.phone] || '',
+        bloodGroup: row[mappings.bloodGroup] || 'O+',
+        photoUrl,
+        batchId,
+        photoTransform: { x: 0, y: -20, scale: 1, rotation: 0 },
+        createdAt: new Date().toISOString()
+      });
     }
     setIsProcessing(false);
     onImportSuccess(importedMembers, { batchId, name: batchName, createdAt: new Date().toISOString(), memberCount: importedMembers.length, isPublic: true, publicToken: `token-${Math.random().toString(36).substring(2, 9)}` });
@@ -90,7 +120,7 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.65)', overflowY: 'auto' }}>
-      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '640px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '680px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -104,13 +134,13 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
         </div>
 
         {/* Body */}
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', maxHeight: '80vh' }}>
           
           {/* Template Download Banner */}
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#14532d', margin: 0 }}>Need a formatted CSV template?</h4>
-              <p style={{ fontSize: '11px', color: '#15803d', margin: '2px 0 0' }}>Download pre-formatted sample CSV with columns (Roll No, Name, Role, etc.).</p>
+              <p style={{ fontSize: '11px', color: '#15803d', margin: '2px 0 0' }}>Includes headers: Roll No, Name, Role, Year, Branch, Section, Email, etc.</p>
             </div>
             <button
               type="button"
@@ -158,6 +188,10 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
                   { key: 'collegeRollNo', label: 'ID / Roll No *' },
                   { key: 'name', label: 'Full Name *' },
                   { key: 'designation', label: 'Designation *' },
+                  { key: 'year', label: 'Year' },
+                  { key: 'branch', label: 'Branch' },
+                  { key: 'section', label: 'Section' },
+                  { key: 'email', label: 'Email ID' },
                   { key: 'validTill', label: 'Valid Till' },
                   { key: 'phone', label: 'Phone' },
                   { key: 'bloodGroup', label: 'Blood Group' },

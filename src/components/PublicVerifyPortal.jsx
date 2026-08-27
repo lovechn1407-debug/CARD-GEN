@@ -140,6 +140,8 @@ export default function PublicVerifyPortal() {
                   {[
                     { icon: Award, label: 'Designation', value: member.designation, italic: true },
                     { icon: User, label: 'Roll No / ID', value: member.collegeRollNo || member.id, mono: true },
+                    { icon: Calendar, label: 'Academic Year', value: member.year || 'N/A' },
+                    { icon: Award, label: 'Branch & Sec', value: `${member.branch || 'N/A'}${member.section ? ` - Sec ${member.section}` : ''}` },
                     { icon: Calendar, label: 'Valid Till', value: member.validTill || '2026-08-31' },
                     { icon: Phone, label: 'Contact', value: member.phone || 'N/A' },
                   ].map(({ icon: Icon, label, value, italic, mono }) => (
@@ -151,6 +153,12 @@ export default function PublicVerifyPortal() {
                     </div>
                   ))}
                 </div>
+
+                {member.email && (
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '11px', color: '#475569', fontFamily: 'monospace' }}>
+                    ✉ <strong>Email:</strong> {member.email}
+                  </div>
+                )}
 
                 <button onClick={() => { setSearched(false); setMember(null); setMemberId(''); }}
                   style={{ alignSelf: 'flex-start', padding: '8px 14px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer', marginTop: '4px' }}>

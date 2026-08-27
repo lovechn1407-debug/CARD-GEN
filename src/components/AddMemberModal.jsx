@@ -7,8 +7,16 @@ const lbl = { display: 'block', fontSize: '11px', fontWeight: 700, color: '#3341
 
 export default function AddMemberModal({ onClose, onAddMember }) {
   const [formData, setFormData] = useState({
-    collegeRollNo: '', name: '', designation: '',
-    validTill: '2026-08-31', phone: '', bloodGroup: 'O+',
+    collegeRollNo: '',
+    name: '',
+    designation: '',
+    year: '3rd Year',
+    branch: 'CSE',
+    section: 'A',
+    email: '',
+    validTill: '2026-08-31',
+    phone: '',
+    bloodGroup: 'O+',
     photoUrl: ''
   });
   const [isUploading, setIsUploading] = useState(false);
@@ -45,7 +53,7 @@ export default function AddMemberModal({ onClose, onAddMember }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.65)', overflowY: 'auto' }}>
-      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '560px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '600px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -59,35 +67,67 @@ export default function AddMemberModal({ onClose, onAddMember }) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+        <form onSubmit={handleSubmit} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', maxHeight: '80vh' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div>
               <label style={lbl}>College Roll No / ID *</label>
               <input type="text" required placeholder="e.g. 2100290130085" value={formData.collegeRollNo}
                 onChange={(e) => setFormData({ ...formData, collegeRollNo: e.target.value })} style={inp} />
             </div>
+
             <div>
               <label style={lbl}>Member Full Name *</label>
               <input type="text" required placeholder="e.g. LOVE CHAUHAN" value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 style={{ ...inp, fontFamily: "'Bebas Neue', sans-serif", textTransform: 'uppercase', fontSize: '15px' }} />
             </div>
+
             <div>
               <label style={lbl}>Designation *</label>
               <input type="text" required placeholder="e.g. Creative Designing" value={formData.designation}
                 onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
                 style={{ ...inp, fontStyle: 'italic' }} />
             </div>
+
             <div>
-              <label style={lbl}>Valid Till Date</label>
-              <input type="date" value={formData.validTill}
-                onChange={(e) => setFormData({ ...formData, validTill: e.target.value })} style={inp} />
+              <label style={lbl}>Academic Year</label>
+              <select value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} style={inp}>
+                {['1st Year', '2nd Year', '3rd Year', '4th Year'].map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
+
+            <div>
+              <label style={lbl}>Branch / Department</label>
+              <input type="text" placeholder="e.g. CSE, ECE, ME, IT" value={formData.branch}
+                onChange={(e) => setFormData({ ...formData, branch: e.target.value })} style={inp} />
+            </div>
+
+            <div>
+              <label style={lbl}>Section</label>
+              <input type="text" placeholder="e.g. A, B, C, 1, 2" value={formData.section}
+                onChange={(e) => setFormData({ ...formData, section: e.target.value })} style={inp} />
+            </div>
+
+            <div>
+              <label style={lbl}>Student Email ID</label>
+              <input type="email" placeholder="e.g. student@gmail.com" value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })} style={inp} />
+            </div>
+
             <div>
               <label style={lbl}>Phone Number</label>
               <input type="text" placeholder="+91 9876543210" value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })} style={inp} />
             </div>
+
+            <div>
+              <label style={lbl}>Valid Till Date</label>
+              <input type="date" value={formData.validTill}
+                onChange={(e) => setFormData({ ...formData, validTill: e.target.value })} style={inp} />
+            </div>
+
             <div>
               <label style={lbl}>Blood Group</label>
               <select value={formData.bloodGroup} onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })} style={inp}>

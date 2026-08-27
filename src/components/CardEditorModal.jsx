@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import { uploadToImgBB } from '../utils/imgbb';
-import { X, ZoomIn, ZoomOut, Move, RotateCw, Eye, EyeOff, Upload, Check, RefreshCw } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Move, RotateCw, Eye, EyeOff, Upload, Check, RefreshCw, User, Mail, GraduationCap } from 'lucide-react';
 
 const sliderStyle = { width: '100%', height: '5px', accentColor: '#1d4ed8', cursor: 'pointer' };
 const sectionCard = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' };
 const rowBetween = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: '#334155' };
+const inpStyle = { width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', color: '#0f172a', background: '#fff', outline: 'none', boxSizing: 'border-box' };
+const lblStyle = { display: 'block', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '3px' };
 
 export default function CardEditorModal({ member, onClose, onSave }) {
   const [photoTransform, setPhotoTransform] = useState(member?.photoTransform || { x: 0, y: -20, scale: 1, rotation: 0 });
@@ -13,6 +15,17 @@ export default function CardEditorModal({ member, onClose, onSave }) {
   const [overlayOpacity, setOverlayOpacity] = useState(1.0);
   const [seeThrough, setSeeThrough] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  const [memberData, setMemberData] = useState({
+    name: member?.name || '',
+    designation: member?.designation || '',
+    year: member?.year || '3rd Year',
+    branch: member?.branch || 'CSE',
+    section: member?.section || 'A',
+    email: member?.email || '',
+    phone: member?.phone || '',
+    bloodGroup: member?.bloodGroup || 'O+'
+  });
 
   const handleToggleSeeThrough = () => {
     if (seeThrough) { setSeeThrough(false); setOverlayOpacity(1.0); }
@@ -28,17 +41,20 @@ export default function CardEditorModal({ member, onClose, onSave }) {
     finally { setIsUploading(false); }
   };
 
-  const handleSave = () => { onSave({ ...member, photoUrl, photoTransform }); onClose(); };
+  const handleSave = () => {
+    onSave({ ...member, ...memberData, photoUrl, photoTransform });
+    onClose();
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.65)', overflowY: 'auto' }}>
-      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '820px', maxHeight: '92vh', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '880px', maxHeight: '92vh', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
           <div>
-            <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>Modify Member ID Card</h3>
-            <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>Drag photo on canvas to reposition, or use sliders on the right.</p>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>Modify Member ID Card & Details</h3>
+            <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>Adjust photo positioning or update member information (Year, Branch, Section, Email).</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#94a3b8' }}>
             <X style={{ width: 18, height: 18 }} />
@@ -52,7 +68,7 @@ export default function CardEditorModal({ member, onClose, onSave }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', background: '#f1f5f9', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', width: '280px' }}>
             <div style={{ width: '250px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
               <IDCardCanvas
-                member={{ ...member, photoUrl, photoTransform }}
+                member={{ ...member, ...memberData, photoUrl, photoTransform }}
                 interactive={true}
                 overlayOpacity={overlayOpacity}
                 onTransformChange={setPhotoTransform}
@@ -67,15 +83,40 @@ export default function CardEditorModal({ member, onClose, onSave }) {
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-              {/* Member meta */}
-              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '18px', fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>{member?.name}</div>
-                  <div style={{ fontStyle: 'italic', fontSize: '12px', color: '#475569' }}>{member?.designation}</div>
+              {/* Editable Member Metadata */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <User style={{ width: 13, height: 13 }} /> Member Details (ID: {member?.collegeRollNo || member?.id})
                 </div>
-                <span style={{ background: '#fff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', fontFamily: 'monospace' }}>
-                  ID: {member?.collegeRollNo || member?.id}
-                </span>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <label style={lblStyle}>Full Name</label>
+                    <input type="text" value={memberData.name} onChange={(e) => setMemberData({ ...memberData, name: e.target.value })} style={inpStyle} />
+                  </div>
+                  <div>
+                    <label style={lblStyle}>Designation</label>
+                    <input type="text" value={memberData.designation} onChange={(e) => setMemberData({ ...memberData, designation: e.target.value })} style={inpStyle} />
+                  </div>
+                  <div>
+                    <label style={lblStyle}>Year</label>
+                    <select value={memberData.year} onChange={(e) => setMemberData({ ...memberData, year: e.target.value })} style={inpStyle}>
+                      {['1st Year', '2nd Year', '3rd Year', '4th Year'].map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lblStyle}>Branch</label>
+                    <input type="text" placeholder="e.g. CSE, ECE" value={memberData.branch} onChange={(e) => setMemberData({ ...memberData, branch: e.target.value })} style={inpStyle} />
+                  </div>
+                  <div>
+                    <label style={lblStyle}>Section</label>
+                    <input type="text" placeholder="e.g. A, B" value={memberData.section} onChange={(e) => setMemberData({ ...memberData, section: e.target.value })} style={inpStyle} />
+                  </div>
+                  <div>
+                    <label style={lblStyle}>Email ID</label>
+                    <input type="email" placeholder="student@gmail.com" value={memberData.email} onChange={(e) => setMemberData({ ...memberData, email: e.target.value })} style={inpStyle} />
+                  </div>
+                </div>
               </div>
 
               {/* See Through Overlay */}
@@ -97,42 +138,33 @@ export default function CardEditorModal({ member, onClose, onSave }) {
                   onChange={(e) => setOverlayOpacity(parseFloat(e.target.value))} style={sliderStyle} />
               </div>
 
-              {/* Zoom */}
-              <div style={sectionCard}>
-                <div style={rowBetween}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><ZoomIn style={{ width: 14, height: 14, color: '#1d4ed8' }} /> Photo Zoom / Scale</span>
-                  <span>{photoTransform.scale.toFixed(2)}x</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button onClick={() => setPhotoTransform((p) => ({ ...p, scale: Math.max(0.4, p.scale - 0.05) }))}
-                    style={{ padding: '5px 8px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}>
-                    <ZoomOut style={{ width: 13, height: 13 }} />
-                  </button>
+              {/* Zoom & Rotation */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={sectionCard}>
+                  <div style={rowBetween}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><ZoomIn style={{ width: 13, height: 13, color: '#1d4ed8' }} /> Zoom</span>
+                    <span>{photoTransform.scale.toFixed(2)}x</span>
+                  </div>
                   <input type="range" min="0.4" max="2.5" step="0.02" value={photoTransform.scale}
                     onChange={(e) => setPhotoTransform((p) => ({ ...p, scale: parseFloat(e.target.value) }))} style={sliderStyle} />
-                  <button onClick={() => setPhotoTransform((p) => ({ ...p, scale: Math.min(2.5, p.scale + 0.05) }))}
-                    style={{ padding: '5px 8px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}>
-                    <ZoomIn style={{ width: 13, height: 13 }} />
-                  </button>
                 </div>
-              </div>
 
-              {/* Rotation */}
-              <div style={sectionCard}>
-                <div style={rowBetween}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><RotateCw style={{ width: 14, height: 14, color: '#1d4ed8' }} /> Rotation</span>
-                  <span>{photoTransform.rotation || 0}°</span>
+                <div style={sectionCard}>
+                  <div style={rowBetween}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><RotateCw style={{ width: 13, height: 13, color: '#1d4ed8' }} /> Rotate</span>
+                    <span>{photoTransform.rotation || 0}°</span>
+                  </div>
+                  <input type="range" min="-45" max="45" step="1" value={photoTransform.rotation || 0}
+                    onChange={(e) => setPhotoTransform((p) => ({ ...p, rotation: parseInt(e.target.value) }))} style={sliderStyle} />
                 </div>
-                <input type="range" min="-45" max="45" step="1" value={photoTransform.rotation || 0}
-                  onChange={(e) => setPhotoTransform((p) => ({ ...p, rotation: parseInt(e.target.value) }))} style={sliderStyle} />
               </div>
 
               {/* Upload Photo */}
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#334155', marginBottom: '5px', textTransform: 'uppercase' }}>
+                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
                   Replace Photo (Auto ImgBB Host)
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', border: '2px dashed #cbd5e1', borderRadius: '10px', cursor: 'pointer', background: '#f8fafc' }}>
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '9px', border: '2px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', background: '#f8fafc' }}>
                   <Upload style={{ width: 14, height: 14, color: '#64748b' }} />
                   <span style={{ fontSize: '12px', color: '#475569' }}>{isUploading ? 'Uploading...' : 'Choose image'}</span>
                   <input type="file" accept="image/*" onChange={handleFileChange} disabled={isUploading} style={{ display: 'none' }} />
