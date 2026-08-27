@@ -35,6 +35,7 @@ export const DEFAULT_TEMPLATE_CONFIG = {
   showRefGuide: false,       // Reference ID card overlay guide toggle
   refGuideOpacity: 0.4,      // Reference guide opacity
   directorSignUrl: '',       // Custom Director PNG Signature URL
+  allowedAdminEmail: '',     // Single Authorized Admin Gmail Address
   backQrX: 42,               // Back QR Code X Position
   backQrY: 140,              // Back QR Code Y Position
   backQrSize: 195,           // Back QR Code Box Size in px

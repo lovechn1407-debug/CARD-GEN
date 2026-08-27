@@ -469,6 +469,35 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
             </div>
           </div>
 
+          {/* Single Authorized Admin Gmail Whitelist Control Card */}
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0, paddingBottom: '8px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Eye style={{ width: '16px', height: '16px', color: '#dc2626' }} /> Authorized Admin Gmail Lock
+            </h4>
+            <p style={{ fontSize: '11px', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+              Specify the single authorized Gmail address permitted to sign in and access this Admin Panel. All other Gmail accounts will be automatically blocked.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="email"
+                placeholder="Enter single authorized admin email (e.g. lovechn1407@gmail.com)..."
+                value={config.allowedAdminEmail || ''}
+                onChange={(e) => setConfig({ ...config, allowedAdminEmail: e.target.value })}
+                style={{ flex: 1, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', outline: 'none', background: '#fff', color: '#0f172a' }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  saveTemplateConfig(config);
+                  alert(`Authorized Admin Gmail locked to: ${config.allowedAdminEmail || 'First Google Login'}`);
+                }}
+                style={{ padding: '8px 14px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                Save Lock Email
+              </button>
+            </div>
+          </div>
+
           {/* Back Side Layout Controls Card */}
           <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0, paddingBottom: '8px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
