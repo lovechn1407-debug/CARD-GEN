@@ -2,8 +2,7 @@ import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signInAnonymously, 
   signOut, 
   onAuthStateChanged 
@@ -38,33 +37,27 @@ export const AUTHORIZED_ADMIN_EMAILS = [
 export function isEmailAuthorized(email, customAllowedEmail) {
   if (!email) return false;
   const lower = email.toLowerCase().trim();
-  // Check custom email from DB config first
   if (customAllowedEmail && lower === customAllowedEmail.toLowerCase().trim()) return true;
-  // Fallback to hardcoded list
   return AUTHORIZED_ADMIN_EMAILS.some((e) => lower === e.toLowerCase().trim());
 }
 
-// Trigger Google Redirect sign-in (no popup = no COOP warnings)
-export async function loginWithGoogle() {
-  await signInWithRedirect(auth, googleProvider);
-  // Page navigates away — Firebase restores session via onAuthStateChanged on return
-}
+// Sign in with popup — works reliably across all hosting environments
+export async function loginWithGoogle(customAllowedEmail) {
+  const result = await signInWithPopup(auth, googleProvider);
+  const user = result.user;
 
-// Check if redirect result has an unauthorized user and sign them out
-export async function validateRedirectAuth(customAllowedEmail) {
-  try {
-    const result = await getRedirectResult(auth);
-    if (result && result.user) {
-      const authorized = isEmailAuthorized(result.user.email, customAllowedEmail);
-      if (!authorized) {
-        await signOut(auth);
-        return { denied: true, email: result.user.email };
-      }
-    }
-  } catch (e) {
-    // Not a redirect result or already consumed — ignore
+  if (!user || !user.email) {
+    await signOut(auth);
+    throw new Error("No email address returned from Google.");
   }
-  return null;
+
+  const authorized = isEmailAuthorized(user.email, customAllowedEmail);
+  if (!authorized) {
+    await signOut(auth);
+    throw new Error(`Access Denied: "${user.email}" is NOT authorized. Only the registered Admin Gmail (${customAllowedEmail || AUTHORIZED_ADMIN_EMAILS[0]}) can access this site.`);
+  }
+
+  return user;
 }
 
 export async function ensureAnonymousAuth() {
@@ -86,8 +79,7 @@ export async function logoutUser() {
   }
 }
 
-// onAuthStateChanged fires immediately with null (no session) or the restored user
-// This is the ONLY reliable way to know auth state after a redirect
+// Fires immediately with null or restored user on page load
 export function subscribeToAuth(callback) {
   return onAuthStateChanged(auth, (user) => {
     callback(user);
