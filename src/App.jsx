@@ -38,30 +38,45 @@ export default function App() {
   const [showBulkModal, setShowBulkModal] = useState(false);
 
   useEffect(() => {
-    // onAuthStateChanged fires once immediately when Firebase resolves auth
-    // (from either a fresh session, redirect result, or no session)
+    // Listen for Firebase Auth state changes (remembers logged-in admin user across page reloads)
     const unsubAuth = subscribeToAuth((u) => {
       setUser(u);
-      setAuthLoading(false); // Only show login gate AFTER Firebase tells us the auth state
+      setAuthLoading(false);
     });
-
-    const unsubMembers = subscribeMembers((list) => setMembers(list));
-    const unsubBatches = subscribeBatches((list) => setBatches(list));
-    const unsubConfig = subscribeTemplateConfig((cfg) => setTemplateConfig(cfg));
-    const unsubCardTemplates = subscribeCardTemplates((templates) => setCardTemplates(templates));
 
     const handleHashChange = () => setCurrentRoute(window.location.hash || '#/');
     window.addEventListener('hashchange', handleHashChange);
 
     return () => {
       unsubAuth();
-      unsubMembers();
-      unsubBatches();
-      unsubConfig();
-      unsubCardTemplates();
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
+
+  // DO NOT load Realtime Database until user logs in as Authorized Admin!
+  useEffect(() => {
+    const cfg = getTemplateConfig();
+    const isAdmin = user && !user.isAnonymous && isEmailAuthorized(user.email, cfg.allowedAdminEmail);
+    
+    if (!isAdmin) {
+      setMembers([]);
+      setBatches([]);
+      return;
+    }
+
+    // Subscribe to database listeners ONLY when admin is logged in
+    const unsubMembers = subscribeMembers((list) => setMembers(list));
+    const unsubBatches = subscribeBatches((list) => setBatches(list));
+    const unsubConfig = subscribeTemplateConfig((cfg) => setTemplateConfig(cfg));
+    const unsubCardTemplates = subscribeCardTemplates((templates) => setCardTemplates(templates));
+
+    return () => {
+      unsubMembers && unsubMembers();
+      unsubBatches && unsubBatches();
+      unsubConfig && unsubConfig();
+      unsubCardTemplates && unsubCardTemplates();
+    };
+  }, [user]);
 
   const handleAddMember = async (newMember) => { await updateMember(newMember); };
   const handleImportBatch = async (newMembers, newBatch) => {

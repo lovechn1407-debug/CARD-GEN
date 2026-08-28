@@ -1,6 +1,6 @@
 import React from 'react';
 import { Users, Clock, Printer, ShieldCheck, UserCheck, Plus, FileSpreadsheet, Sliders, LogIn, LogOut, CheckCircle2 } from 'lucide-react';
-import { loginWithGoogle, logoutUser } from '../utils/firebase';
+import { logoutUser } from '../utils/firebase';
 
 const styles = {
   header: {
@@ -92,14 +92,6 @@ export default function Navbar({ activeTab, setActiveTab, user, onOpenAddModal, 
     { id: 'edit-portal', label: 'Self-Edit', icon: UserCheck }
   ];
 
-  const handleGoogleAuth = async () => {
-    try {
-      await loginWithGoogle();
-    } catch (e) {
-      alert("Google Sign-In failed or was cancelled.");
-    }
-  };
-
   return (
     <header style={styles.header}>
       <div style={styles.inner}>
@@ -147,49 +139,25 @@ export default function Navbar({ activeTab, setActiveTab, user, onOpenAddModal, 
           })}
         </nav>
 
-        {/* Action Buttons & Firebase Google Auth */}
+        {/* Action Buttons & Auth Status */}
         <div style={styles.actions}>
 
-          {/* Google Auth Status */}
+          {/* Admin Auth Status */}
           {user && !user.isAnonymous ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 8px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
-              {user.photoURL ? (
-                <img src={user.photoURL} alt="Avatar" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
-              ) : (
-                <CheckCircle2 style={{ width: 16, height: 16, color: '#16a34a' }} />
-              )}
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#15803d', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user.displayName || user.email}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
+              <CheckCircle2 style={{ width: 15, height: 15, color: '#16a34a' }} />
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#15803d', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.email}
               </span>
               <button
                 onClick={logoutUser}
-                title="Sign Out"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#94a3b8' }}
+                title="Sign Out Admin"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#fff', border: '1px solid #fecaca', borderRadius: '6px', cursor: 'pointer', padding: '2px 6px', color: '#dc2626', fontSize: '10px', fontWeight: 700 }}
               >
-                <LogOut style={{ width: 13, height: 13 }} />
+                <LogOut style={{ width: 12, height: 12 }} /> Logout
               </button>
             </div>
-          ) : (
-            <button
-              onClick={handleGoogleAuth}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '6px 12px',
-                background: '#fff',
-                color: '#334155',
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                fontSize: '11px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              <LogIn style={{ width: 13, height: 13, color: '#1d4ed8' }} /> Admin Google Login
-            </button>
-          )}
+          ) : null}
 
           <button
             onClick={onOpenAddModal}

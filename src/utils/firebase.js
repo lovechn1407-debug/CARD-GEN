@@ -1,8 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup,
+  signInWithEmailAndPassword,
   signInAnonymously, 
   signOut, 
   onAuthStateChanged 
@@ -24,9 +23,6 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const rtdb = getDatabase(app);
 
-const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: 'select_account' });
-
 // Hardcoded Allowed Admin Emails
 export const AUTHORIZED_ADMIN_EMAILS = [
   "lovechn1407@gmail.com",
@@ -41,23 +37,37 @@ export function isEmailAuthorized(email, customAllowedEmail) {
   return AUTHORIZED_ADMIN_EMAILS.some((e) => lower === e.toLowerCase().trim());
 }
 
-// Sign in with popup — works reliably across all hosting environments
-export async function loginWithGoogle(customAllowedEmail) {
-  const result = await signInWithPopup(auth, googleProvider);
-  const user = result.user;
-
-  if (!user || !user.email) {
-    await signOut(auth);
-    throw new Error("No email address returned from Google.");
+// Sign in with Email & Password (added in Firebase Auth console)
+export async function loginWithEmailPassword(email, password, customAllowedEmail) {
+  if (!email || !password) {
+    throw new Error("Please enter both Admin Email and Password.");
   }
 
-  const authorized = isEmailAuthorized(user.email, customAllowedEmail);
-  if (!authorized) {
-    await signOut(auth);
-    throw new Error(`Access Denied: "${user.email}" is NOT authorized. Only the registered Admin Gmail (${customAllowedEmail || AUTHORIZED_ADMIN_EMAILS[0]}) can access this site.`);
-  }
+  try {
+    const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+    const user = result.user;
 
-  return user;
+    if (!user || !user.email) {
+      await signOut(auth);
+      throw new Error("Invalid user authentication record.");
+    }
+
+    const authorized = isEmailAuthorized(user.email, customAllowedEmail);
+    if (!authorized) {
+      await signOut(auth);
+      throw new Error(`Access Denied: "${user.email}" is NOT an authorized Admin email.`);
+    }
+
+    return user;
+  } catch (err) {
+    if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+      throw new Error("Invalid Email or Password. Please check credentials added in Firebase Auth console.");
+    }
+    if (err.code === 'auth/too-many-requests') {
+      throw new Error("Too many failed login attempts. Please try again later.");
+    }
+    throw err;
+  }
 }
 
 export async function ensureAnonymousAuth() {
@@ -79,7 +89,7 @@ export async function logoutUser() {
   }
 }
 
-// Fires immediately with null or restored user on page load
+// Fires immediately with null or restored user on page load (Firebase Auth remembers user session)
 export function subscribeToAuth(callback) {
   return onAuthStateChanged(auth, (user) => {
     callback(user);
