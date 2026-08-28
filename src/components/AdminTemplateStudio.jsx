@@ -1,23 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import FlippableIDCard from './FlippableIDCard';
-import { getTemplateConfig, saveTemplateConfig, subscribeTemplateConfig, DEFAULT_TEMPLATE_CONFIG } from '../utils/storage';
+import { 
+  getTemplateConfig, 
+  saveTemplateConfig, 
+  subscribeTemplateConfig, 
+  DEFAULT_TEMPLATE_CONFIG,
+  subscribeCardTemplates,
+  saveCardTemplate,
+  deleteCardTemplate
+} from '../utils/storage';
 import { uploadToImgBB } from '../utils/imgbb';
-import { Sliders, Type, Layers, Eye, EyeOff, Save, RotateCcw, Check, Upload, FileText } from 'lucide-react';
+import { Sliders, Type, Layers, Eye, EyeOff, Save, RotateCcw, Check, Upload, FileText, CreditCard, Plus, Trash2, Image as ImageIcon, X } from 'lucide-react';
 
 export default function AdminTemplateStudio({ members, onConfigSaved }) {
   const [config, setConfig] = useState(getTemplateConfig());
+  const [cardTemplates, setCardTemplates] = useState({});
+  const [activeCardId, setActiveCardId] = useState('default');
   const [selectedMemberIndex, setSelectedMemberIndex] = useState(0);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isUploadingSign, setIsUploadingSign] = useState(false);
+  const [isUploadingFrontBg, setIsUploadingFrontBg] = useState(false);
+  const [isUploadingBackBg, setIsUploadingBackBg] = useState(false);
 
-  // Load real config from Firebase Realtime Database (not in-memory defaults)
+  // New Card Modal State
+  const [showNewCardModal, setShowNewCardModal] = useState(false);
+  const [newCardData, setNewCardData] = useState({
+    name: '',
+    bgUrl: '',
+    backBgUrl: ''
+  });
+  const [isUploadingNewFront, setIsUploadingNewFront] = useState(false);
+  const [isUploadingNewBack, setIsUploadingNewBack] = useState(false);
+
+  // Load real config and card templates from Firebase Realtime Database
   useEffect(() => {
-    const unsub = subscribeTemplateConfig((dbConfig) => {
+    const unsubConfig = subscribeTemplateConfig((dbConfig) => {
       setConfig(dbConfig);
     });
-    return () => unsub && unsub();
+    const unsubTemplates = subscribeCardTemplates((templates) => {
+      setCardTemplates(templates);
+    });
+    return () => {
+      unsubConfig && unsubConfig();
+      unsubTemplates && unsubTemplates();
+    };
   }, []);
+
+  const activeTemplate = cardTemplates[activeCardId] || cardTemplates['default'] || {
+    id: 'default',
+    name: 'Core Team (Default)',
+    bgUrl: '',
+    backBgUrl: '',
+    config
+  };
 
   const handleDirectorSignUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -28,6 +64,12 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
       const updatedConfig = { ...config, directorSignUrl: hostedUrl };
       setConfig(updatedConfig);
       saveTemplateConfig(updatedConfig);
+      if (activeCardId) {
+        saveCardTemplate({
+          ...activeTemplate,
+          config: updatedConfig
+        });
+      }
       if (onConfigSaved) onConfigSaved(updatedConfig);
     } catch (err) {
       alert('Failed to upload Director Signature PNG.');
@@ -36,15 +78,92 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
     }
   };
 
-  const sampleMember = members[selectedMemberIndex] || members[0] || {
-    name: 'LOVE CHAUHAN',
-    designation: 'Creative Designing',
-    photoUrl: 'https://i.imgur.com/8Q9Z5b4.png',
-    photoTransform: { x: 0, y: -20, scale: 1.05, rotation: 0 }
+  const handleFrontBgUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingFrontBg(true);
+    try {
+      const hostedUrl = await uploadToImgBB(file);
+      const updatedTemplate = {
+        ...activeTemplate,
+        bgUrl: hostedUrl
+      };
+      saveCardTemplate(updatedTemplate);
+    } catch (err) {
+      alert('Failed to upload front background image to ImgBB.');
+    } finally {
+      setIsUploadingFrontBg(false);
+    }
+  };
+
+  const handleBackBgUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingBackBg(true);
+    try {
+      const hostedUrl = await uploadToImgBB(file);
+      const updatedTemplate = {
+        ...activeTemplate,
+        backBgUrl: hostedUrl
+      };
+      saveCardTemplate(updatedTemplate);
+    } catch (err) {
+      alert('Failed to upload back background image to ImgBB.');
+    } finally {
+      setIsUploadingBackBg(false);
+    }
+  };
+
+  const handleCreateNewCard = async (e) => {
+    e.preventDefault();
+    if (!newCardData.name.trim()) {
+      alert('Please enter a name for the new card template');
+      return;
+    }
+    const newId = `card_${Date.now().toString().slice(-6)}`;
+    const templateObj = {
+      id: newId,
+      name: newCardData.name.trim(),
+      bgUrl: newCardData.bgUrl || '',
+      backBgUrl: newCardData.backBgUrl || '',
+      config: { ...config }
+    };
+    await saveCardTemplate(templateObj);
+    setActiveCardId(newId);
+    setShowNewCardModal(false);
+    setNewCardData({ name: '', bgUrl: '', backBgUrl: '' });
+  };
+
+  const handleDeleteCard = async (cardId) => {
+    if (cardId === 'default') {
+      alert('The Default Core Team card template cannot be deleted.');
+      return;
+    }
+    const name = cardTemplates[cardId]?.name || 'this card template';
+    if (confirm(`Are you sure you want to delete "${name}"? Members assigned to this card will fallback to default.`)) {
+      await deleteCardTemplate(cardId);
+      setActiveCardId('default');
+    }
+  };
+
+  const sampleMember = {
+    ...(members[selectedMemberIndex] || members[0] || {
+      name: 'LOVE CHAUHAN',
+      designation: 'Creative Designing',
+      photoUrl: 'https://i.imgur.com/8Q9Z5b4.png',
+      photoTransform: { x: 0, y: -20, scale: 1.05, rotation: 0 }
+    }),
+    cardId: activeCardId
   };
 
   const handleSave = () => {
     saveTemplateConfig(config);
+    if (activeCardId) {
+      saveCardTemplate({
+        ...activeTemplate,
+        config
+      });
+    }
     setSavedSuccess(true);
     if (onConfigSaved) onConfigSaved(config);
     setTimeout(() => setSavedSuccess(false), 2500);
@@ -54,17 +173,130 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
     if (confirm('Reset card design layout to original default settings?')) {
       setConfig(DEFAULT_TEMPLATE_CONFIG);
       saveTemplateConfig(DEFAULT_TEMPLATE_CONFIG);
+      if (activeCardId) {
+        saveCardTemplate({
+          ...activeTemplate,
+          config: DEFAULT_TEMPLATE_CONFIG
+        });
+      }
       if (onConfigSaved) onConfigSaved(DEFAULT_TEMPLATE_CONFIG);
     }
   };
 
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      
+      {/* CARD TEMPLATES SELECTOR BAR */}
+      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <CreditCard style={{ width: 22, height: 22, color: '#1d4ed8' }} />
+          <div>
+            <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>Card Design Templates & Options</h4>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>Select a card template to edit or generate new card designs for events, volunteers, etc.</p>
+          </div>
+        </div>
+
+        {/* Card Switcher Pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {Object.values(cardTemplates).map((template) => {
+            const isSelected = activeCardId === template.id;
+            return (
+              <div key={template.id} style={{ display: 'flex', alignItems: 'center' }}>
+                <button
+                  onClick={() => {
+                    setActiveCardId(template.id);
+                    if (template.config) setConfig({ ...DEFAULT_TEMPLATE_CONFIG, ...template.config });
+                  }}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: isSelected ? '2px solid #1d4ed8' : '1px solid #cbd5e1',
+                    background: isSelected ? '#1d4ed8' : '#ffffff',
+                    color: isSelected ? '#ffffff' : '#334155',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: isSelected ? '0 2px 6px rgba(29,78,216,0.25)' : 'none'
+                  }}
+                >
+                  <CreditCard style={{ width: 14, height: 14 }} />
+                  {template.name}
+                </button>
+              </div>
+            );
+          })}
+
+          <button
+            onClick={() => setShowNewCardModal(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              background: '#16a34a',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(22,163,74,0.25)'
+            }}
+          >
+            <Plus style={{ width: 16, height: 16 }} /> Generate New Card
+          </button>
+        </div>
+      </div>
+
+      {/* ACTIVE CARD BACKGROUND & DETAILS BAR */}
+      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+              Editing Template:
+            </span>
+            <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', margin: 0 }}>{activeTemplate.name}</h3>
+          </div>
+          <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0' }}>
+            Upload custom front and back background artwork PNGs specifically for this card option.
+          </p>
+        </div>
+
+        {/* Upload Custom Front/Back Background Buttons for Active Card */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Front Background Upload */}
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+            <Upload style={{ width: 14, height: 14, color: '#1d4ed8' }} />
+            {isUploadingFrontBg ? 'Uploading Front...' : 'Upload Front BG PNG'}
+            <input type="file" accept="image/*" onChange={handleFrontBgUpload} disabled={isUploadingFrontBg} style={{ display: 'none' }} />
+          </label>
+
+          {/* Back Side Background Upload */}
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+            <Upload style={{ width: 14, height: 14, color: '#9333ea' }} />
+            {isUploadingBackBg ? 'Uploading Back...' : 'Upload Back Side BG PNG'}
+            <input type="file" accept="image/*" onChange={handleBackBgUpload} disabled={isUploadingBackBg} style={{ display: 'none' }} />
+          </label>
+
+          {activeCardId !== 'default' && (
+            <button
+              onClick={() => handleDeleteCard(activeCardId)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#dc2626', cursor: 'pointer' }}
+            >
+              <Trash2 style={{ width: 14, height: 14 }} /> Delete Card
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Studio Header Bar */}
       <div style={{ background: 'linear-gradient(to right, #eff6ff, #eef2ff)', border: '1px solid #dbeafe', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-            <Sliders style={{ width: '20px', height: '20px', color: '#0072ce' }} /> Card Design & Layout Studio
+            <Sliders style={{ width: '20px', height: '20px', color: '#0072ce' }} /> Layout & Fine-Tuning Studio ({activeTemplate.name})
           </h3>
           <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>
             Fine-tune typography positions, font sizes, text letter spacing, black fade height, and reference guide overlay live.
@@ -609,6 +841,106 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
 
         </div>
       </div>
+
+      {/* NEW CARD TEMPLATE GENERATOR MODAL */}
+      {showNewCardModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.65)' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '520px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Plus style={{ width: 18, height: 18, color: '#16a34a' }} />
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>Generate New Card Option</h3>
+              </div>
+              <button onClick={() => setShowNewCardModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                <X style={{ width: 18, height: 18 }} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNewCard} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', marginBottom: '5px' }}>
+                  Card Template Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Event Pass, Volunteer Card, V.I.P Member"
+                  value={newCardData.name}
+                  onChange={(e) => setNewCardData({ ...newCardData, name: e.target.value })}
+                  style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* Upload Card Front Background */}
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', marginBottom: '5px' }}>
+                  Upload Card Front Background Artwork (Optional)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', border: '2px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', background: '#f8fafc' }}>
+                    <Upload style={{ width: 14, height: 14, color: '#1d4ed8' }} />
+                    <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>
+                      {isUploadingNewFront ? 'Uploading Front...' : (newCardData.bgUrl ? 'Front Image Uploaded ✓' : 'Choose Front Artwork PNG')}
+                    </span>
+                    <input type="file" accept="image/*" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setIsUploadingNewFront(true);
+                      try {
+                        const url = await uploadToImgBB(file);
+                        setNewCardData((prev) => ({ ...prev, bgUrl: url }));
+                      } catch (err) {
+                        alert('Failed to upload front image');
+                      } finally {
+                        setIsUploadingNewFront(false);
+                      }
+                    }} disabled={isUploadingNewFront} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+
+              {/* Upload Card Back Side Background */}
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', marginBottom: '5px' }}>
+                  Upload Card Back Side Artwork (Optional)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', border: '2px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', background: '#f8fafc' }}>
+                    <Upload style={{ width: 14, height: 14, color: '#9333ea' }} />
+                    <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>
+                      {isUploadingNewBack ? 'Uploading Back...' : (newCardData.backBgUrl ? 'Back Image Uploaded ✓' : 'Choose Back Side Artwork PNG')}
+                    </span>
+                    <input type="file" accept="image/*" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setIsUploadingNewBack(true);
+                      try {
+                        const url = await uploadToImgBB(file);
+                        setNewCardData((prev) => ({ ...prev, backBgUrl: url }));
+                      } catch (err) {
+                        alert('Failed to upload back image');
+                      } finally {
+                        setIsUploadingNewBack(false);
+                      }
+                    }} disabled={isUploadingNewBack} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                <button type="button" onClick={() => setShowNewCardModal(false)}
+                  style={{ padding: '8px 16px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={isUploadingNewFront || isUploadingNewBack}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                  <Check style={{ width: 14, height: 14 }} /> Create & Save Card Option
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

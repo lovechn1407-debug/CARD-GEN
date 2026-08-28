@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { CARD_WIDTH, CARD_HEIGHT } from './IDCardCanvas';
-import { getTemplateConfig } from '../utils/storage';
+import { getTemplateConfig, getCardTemplateById } from '../utils/storage';
 
 export default function IDCardBackCanvas({
   member,
   templateConfig: customConfig,
+  cardTemplate: customCardTemplate,
   className = '',
   style = {}
 }) {
   const canvasRef = useRef(null);
-  const cfg = customConfig || getTemplateConfig();
+  const activeTemplate = customCardTemplate || getCardTemplateById(member?.cardId || 'default');
+  const cfg = customConfig || activeTemplate?.config || getTemplateConfig();
 
   const [backBgImg, setBackBgImg] = useState(null);
   const [qrImage, setQrImage] = useState(null);
@@ -18,16 +20,21 @@ export default function IDCardBackCanvas({
 
   // 1. Load User's Back Card Background Template PNG
   useEffect(() => {
+    const backSrc = activeTemplate?.backBgUrl || '/card_back.png';
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = '/card_back.png';
+    img.src = backSrc;
     img.onload = () => setBackBgImg(img);
     img.onerror = () => {
-      const img2 = new Image();
-      img2.src = 'card_back.png';
-      img2.onload = () => setBackBgImg(img2);
+      if (backSrc !== 'card_back.png' && !backSrc.startsWith('http')) {
+        const img2 = new Image();
+        img2.src = 'card_back.png';
+        img2.onload = () => setBackBgImg(img2);
+      } else {
+        setBackBgImg(null);
+      }
     };
-  }, []);
+  }, [activeTemplate?.backBgUrl, member?.cardId]);
 
   // 2. Generate QR Code Image
   useEffect(() => {

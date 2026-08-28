@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { uploadToImgBB } from '../utils/imgbb';
-import { X, Upload, Check, UserPlus, Image as ImageIcon } from 'lucide-react';
+import { getCardTemplates } from '../utils/storage';
+import { X, Upload, Check, UserPlus, Image as ImageIcon, CreditCard } from 'lucide-react';
 
 const inp = { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', color: '#0f172a', background: '#fff', outline: 'none', boxSizing: 'border-box' };
 const lbl = { display: 'block', fontSize: '11px', fontWeight: 700, color: '#334155', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.4px' };
 
 export default function AddMemberModal({ onClose, onAddMember }) {
+  const cardTemplates = getCardTemplates();
   const [formData, setFormData] = useState({
     collegeRollNo: '',
     name: '',
     designation: '',
+    cardId: 'default',
     year: '3rd Year',
     branch: 'CSE',
     section: 'A',
@@ -53,7 +56,7 @@ export default function AddMemberModal({ onClose, onAddMember }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,23,42,0.65)', overflowY: 'auto' }}>
-      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '600px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '640px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -68,6 +71,46 @@ export default function AddMemberModal({ onClose, onAddMember }) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', maxHeight: '80vh' }}>
+          
+          {/* Card Template Selector Radio Options */}
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px' }}>
+            <label style={{ ...lbl, color: '#1d4ed8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CreditCard style={{ width: 14, height: 14 }} /> Select Card Design / Template *
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '10px' }}>
+              {Object.values(cardTemplates).map((template) => {
+                const isSelected = formData.cardId === template.id;
+                return (
+                  <label
+                    key={template.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: isSelected ? '2px solid #1d4ed8' : '1px solid #cbd5e1',
+                      background: isSelected ? '#eff6ff' : '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="cardId"
+                      value={template.id}
+                      checked={isSelected}
+                      onChange={() => setFormData({ ...formData, cardId: template.id })}
+                      style={{ accentColor: '#1d4ed8', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '13px', fontWeight: isSelected ? 700 : 500, color: isSelected ? '#1e40af' : '#334155' }}>
+                      {template.name}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div>
               <label style={lbl}>College Roll No / ID *</label>

@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import JSZip from 'jszip';
 import QRCode from 'qrcode';
 import { CARD_WIDTH, CARD_HEIGHT } from '../components/IDCardCanvas';
-import { getTemplateConfig } from './storage';
+import { getTemplateConfig, getCardTemplateById } from './storage';
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -22,12 +22,15 @@ export async function renderMemberCardCanvas(member) {
   canvas.width = CARD_WIDTH;
   canvas.height = CARD_HEIGHT;
   const ctx = canvas.getContext('2d');
-  const cfg = getTemplateConfig();
+  
+  const activeTemplate = getCardTemplateById(member?.cardId || 'default');
+  const cfg = activeTemplate?.config || getTemplateConfig();
 
   let bgImg = null;
   let fadeImg = null;
+  const frontSrc = activeTemplate?.bgUrl || '/card_bg.png';
   try {
-    bgImg = await loadImage('/card_bg.png');
+    bgImg = await loadImage(frontSrc);
   } catch (e) {
     try { bgImg = await loadImage('card_bg.png'); } catch (err) {}
   }
@@ -207,11 +210,14 @@ export async function renderMemberCardBackCanvas(member) {
   canvas.width = CARD_WIDTH;
   canvas.height = CARD_HEIGHT;
   const ctx = canvas.getContext('2d');
-  const cfg = getTemplateConfig();
+  
+  const activeTemplate = getCardTemplateById(member?.cardId || 'default');
+  const cfg = activeTemplate?.config || getTemplateConfig();
 
   let backBgImg = null;
+  const backSrc = activeTemplate?.backBgUrl || '/card_back.png';
   try {
-    backBgImg = await loadImage('/card_back.png');
+    backBgImg = await loadImage(backSrc);
   } catch (e) {
     try { backBgImg = await loadImage('card_back.png'); } catch (err) {}
   }

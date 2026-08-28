@@ -33,6 +33,30 @@ export const DEFAULT_TEMPLATE_CONFIG = {
   backSignWidth: 120         // Director Signature Width/Size in px
 };
 
+export const DEFAULT_CARD_TEMPLATES = {
+  default: {
+    id: 'default',
+    name: 'Core Team (Default)',
+    bgUrl: '',
+    backBgUrl: '',
+    config: { ...DEFAULT_TEMPLATE_CONFIG }
+  },
+  volunteer: {
+    id: 'volunteer',
+    name: 'Volunteer Card',
+    bgUrl: '',
+    backBgUrl: '',
+    config: { ...DEFAULT_TEMPLATE_CONFIG }
+  },
+  event: {
+    id: 'event',
+    name: 'Event Pass',
+    bgUrl: '',
+    backBgUrl: '',
+    config: { ...DEFAULT_TEMPLATE_CONFIG }
+  }
+};
+
 // Initial default member records to seed Realtime Database if empty
 const DEFAULT_MEMBERS = [
   {
@@ -44,6 +68,7 @@ const DEFAULT_MEMBERS = [
     phone: '+91 9876543210',
     bloodGroup: 'O+',
     photoUrl: '',
+    cardId: 'default',
     batchId: 'BATCH-DEFAULT-2026',
     photoTransform: { x: 0, y: -20, scale: 1.05, rotation: 0 },
     createdAt: new Date().toISOString()
@@ -57,6 +82,7 @@ const DEFAULT_MEMBERS = [
     phone: '+91 9123456789',
     bloodGroup: 'B+',
     photoUrl: '',
+    cardId: 'default',
     batchId: 'BATCH-DEFAULT-2026',
     photoTransform: { x: 0, y: -20, scale: 1, rotation: 0 },
     createdAt: new Date().toISOString()
@@ -79,6 +105,7 @@ let cachedMembers = [...DEFAULT_MEMBERS];
 let cachedBatches = [...DEFAULT_BATCHES];
 let cachedEdits = [];
 let cachedConfig = { ...DEFAULT_TEMPLATE_CONFIG };
+let cachedCardTemplates = { ...DEFAULT_CARD_TEMPLATES };
 
 // -------------------------------------------------------------
 // REAL-TIME FIREBASE REALTIME DATABASE SUBSCRIPTIONS (rtdb)
@@ -95,8 +122,8 @@ export function subscribeMembers(callback) {
       return;
     }
     const list = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
-    cachedMembers = list;
-    callback(list);
+    cachedMembers = list.map(m => ({ cardId: 'default', ...m }));
+    callback(cachedMembers);
   }, (err) => {
     console.warn("Realtime DB members subscription warning:", err);
     callback(cachedMembers);
@@ -155,6 +182,24 @@ export function subscribeTemplateConfig(callback) {
   });
 }
 
+export function subscribeCardTemplates(callback) {
+  ensureAnonymousAuth();
+  const templatesRef = rtdbRef(rtdb, 'config/cards');
+  return rtdbOnValue(templatesRef, (snapshot) => {
+    const val = snapshot.val();
+    if (!val) {
+      rtdbSet(templatesRef, DEFAULT_CARD_TEMPLATES).catch(() => {});
+      cachedCardTemplates = { ...DEFAULT_CARD_TEMPLATES };
+      callback(DEFAULT_CARD_TEMPLATES);
+      return;
+    }
+    cachedCardTemplates = { ...DEFAULT_CARD_TEMPLATES, ...val };
+    callback(cachedCardTemplates);
+  }, () => {
+    callback(cachedCardTemplates);
+  });
+}
+
 // -------------------------------------------------------------
 // READ & WRITE OPERATIONS (100% REALTIME DATABASE ONLY)
 // -------------------------------------------------------------
@@ -170,6 +215,36 @@ export async function saveTemplateConfig(config) {
     await rtdbSet(rtdbRef(rtdb, 'config/template_studio'), config);
   } catch (err) {
     console.error("Error saving template config to Realtime Database:", err);
+  }
+}
+
+export function getCardTemplates() {
+  return cachedCardTemplates;
+}
+
+export function getCardTemplateById(cardId) {
+  return cachedCardTemplates[cardId] || cachedCardTemplates['default'] || DEFAULT_CARD_TEMPLATES['default'];
+}
+
+export async function saveCardTemplate(templateObj) {
+  if (!templateObj.id) return;
+  cachedCardTemplates[templateObj.id] = templateObj;
+  try {
+    await ensureAnonymousAuth();
+    await rtdbSet(rtdbRef(rtdb, `config/cards/${templateObj.id}`), templateObj);
+  } catch (err) {
+    console.error("Error saving card template to Realtime Database:", err);
+  }
+}
+
+export async function deleteCardTemplate(cardId) {
+  if (cardId === 'default') return; // Cannot delete default card template
+  delete cachedCardTemplates[cardId];
+  try {
+    await ensureAnonymousAuth();
+    await rtdbRemove(rtdbRef(rtdb, `config/cards/${cardId}`));
+  } catch (err) {
+    console.error("Error removing card template from Realtime Database:", err);
   }
 }
 

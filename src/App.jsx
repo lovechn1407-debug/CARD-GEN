@@ -13,6 +13,7 @@ import {
   subscribeMembers, 
   subscribeBatches, 
   subscribeTemplateConfig,
+  subscribeCardTemplates,
   saveMembers, 
   saveBatches, 
   updateMember, 
@@ -27,6 +28,7 @@ export default function App() {
 
   const [members, setMembers] = useState([]);
   const [batches, setBatches] = useState([]);
+  const [cardTemplates, setCardTemplates] = useState({});
   const [templateConfig, setTemplateConfig] = useState(getTemplateConfig());
   const [user, setUser] = useState(null);
   // authLoading = true while Firebase resolves auth state (handles redirect login restore)
@@ -46,6 +48,7 @@ export default function App() {
     const unsubMembers = subscribeMembers((list) => setMembers(list));
     const unsubBatches = subscribeBatches((list) => setBatches(list));
     const unsubConfig = subscribeTemplateConfig((cfg) => setTemplateConfig(cfg));
+    const unsubCardTemplates = subscribeCardTemplates((templates) => setCardTemplates(templates));
 
     const handleHashChange = () => setCurrentRoute(window.location.hash || '#/');
     window.addEventListener('hashchange', handleHashChange);
@@ -55,6 +58,7 @@ export default function App() {
       unsubMembers();
       unsubBatches();
       unsubConfig();
+      unsubCardTemplates();
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);

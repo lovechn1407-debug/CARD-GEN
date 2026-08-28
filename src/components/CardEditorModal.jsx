@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import { uploadToImgBB } from '../utils/imgbb';
-import { X, ZoomIn, ZoomOut, Move, RotateCw, Eye, EyeOff, Upload, Check, RefreshCw, User, Type } from 'lucide-react';
+import { getCardTemplates } from '../utils/storage';
+import { X, ZoomIn, ZoomOut, Move, RotateCw, Eye, EyeOff, Upload, Check, RefreshCw, User, Type, CreditCard } from 'lucide-react';
 
 const sliderStyle = { width: '100%', height: '5px', accentColor: '#1d4ed8', cursor: 'pointer' };
 const sectionCard = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' };
@@ -10,6 +11,7 @@ const inpStyle = { width: '100%', padding: '6px 10px', border: '1px solid #cbd5e
 const lblStyle = { display: 'block', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '3px' };
 
 export default function CardEditorModal({ member, onClose, onSave }) {
+  const cardTemplates = getCardTemplates();
   const [photoTransform, setPhotoTransform] = useState(member?.photoTransform || { x: 0, y: -20, scale: 1, rotation: 0 });
   const [photoUrl, setPhotoUrl] = useState(member?.photoUrl || '');
   const [overlayOpacity, setOverlayOpacity] = useState(1.0);
@@ -19,6 +21,7 @@ export default function CardEditorModal({ member, onClose, onSave }) {
   const [memberData, setMemberData] = useState({
     name: member?.name || '',
     designation: member?.designation || '',
+    cardId: member?.cardId || 'default',
     year: member?.year || '3rd Year',
     branch: member?.branch || 'CSE',
     section: member?.section || 'A',
@@ -56,7 +59,7 @@ export default function CardEditorModal({ member, onClose, onSave }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
           <div>
             <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>Modify Member ID Card & Details</h3>
-            <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>Reposition photo, adjust long name display (auto-fit or 2 lines), or update info.</p>
+            <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>Reposition photo, adjust long name display, select card type, or update info.</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#94a3b8' }}>
             <X style={{ width: 18, height: 18 }} />
@@ -99,6 +102,14 @@ export default function CardEditorModal({ member, onClose, onSave }) {
                   <div>
                     <label style={lblStyle}>Designation</label>
                     <input type="text" value={memberData.designation} onChange={(e) => setMemberData({ ...memberData, designation: e.target.value })} style={inpStyle} />
+                  </div>
+                  <div>
+                    <label style={lblStyle}>Card Design / Template</label>
+                    <select value={memberData.cardId || 'default'} onChange={(e) => setMemberData({ ...memberData, cardId: e.target.value })} style={{ ...inpStyle, fontWeight: 600, color: '#1d4ed8' }}>
+                      {Object.values(cardTemplates).map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label style={lblStyle}>Year</label>

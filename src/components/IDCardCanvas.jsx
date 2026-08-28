@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getTemplateConfig } from '../utils/storage';
+import { getTemplateConfig, getCardTemplateById } from '../utils/storage';
 
 export const CARD_WIDTH = 608;
 export const CARD_HEIGHT = 1000;
@@ -9,6 +9,7 @@ export default function IDCardCanvas({
   interactive = false,
   overlayOpacity = 1.0,
   templateConfig: customConfig,
+  cardTemplate: customCardTemplate,
   onTransformChange,
   className = ''
 }) {
@@ -19,7 +20,8 @@ export default function IDCardCanvas({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const transform = member?.photoTransform || { x: 0, y: -20, scale: 1, rotation: 0 };
-  const cfg = customConfig || getTemplateConfig();
+  const activeTemplate = customCardTemplate || getCardTemplateById(member?.cardId || 'default');
+  const cfg = customConfig || activeTemplate?.config || getTemplateConfig();
 
   const [bgImage, setBgImage] = useState(null);
   const [fadeOverlayImage, setFadeOverlayImage] = useState(null);
@@ -44,18 +46,23 @@ export default function IDCardCanvas({
     };
   }, [interactive]);
 
-  // 1. Load Background PNG
+  // 1. Load Background PNG (Custom Card Template or Default)
   useEffect(() => {
+    const bgSrc = activeTemplate?.bgUrl || '/card_bg.png';
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = '/card_bg.png';
+    img.src = bgSrc;
     img.onload = () => setBgImage(img);
     img.onerror = () => {
-      const img2 = new Image();
-      img2.src = 'card_bg.png';
-      img2.onload = () => setBgImage(img2);
+      if (bgSrc !== 'card_bg.png' && !bgSrc.startsWith('http')) {
+        const img2 = new Image();
+        img2.src = 'card_bg.png';
+        img2.onload = () => setBgImage(img2);
+      } else {
+        setBgImage(null);
+      }
     };
-  }, []);
+  }, [activeTemplate?.bgUrl, member?.cardId]);
 
   // 2. Load Black Fade Overlay PNG
   useEffect(() => {

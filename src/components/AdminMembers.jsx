@@ -4,10 +4,13 @@ import FlippableIDCard from './FlippableIDCard';
 import AddMemberModal from './AddMemberModal';
 import BulkCsvModal from './BulkCsvModal';
 import CardEditorModal from './CardEditorModal';
+import { getCardTemplates } from '../utils/storage';
 import { UserPlus, FileSpreadsheet, Search, SlidersHorizontal, Edit3, Trash2, CreditCard, AlertTriangle, Filter } from 'lucide-react';
 
 export default function AdminMembers({ members, batches, onAddMember, onImportBatch, onUpdateMember, onDeleteMember }) {
+  const cardTemplates = getCardTemplates();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCardFilter, setSelectedCardFilter] = useState('ALL');
   const [selectedBatchFilter, setSelectedBatchFilter] = useState('ALL');
   const [selectedBranchFilter, setSelectedBranchFilter] = useState('ALL');
   const [selectedYearFilter, setSelectedYearFilter] = useState('ALL');
@@ -33,11 +36,12 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
       m.section?.toLowerCase().includes(searchLower) ||
       m.email?.toLowerCase().includes(searchLower);
 
+    const matchesCard = selectedCardFilter === 'ALL' || (m.cardId || 'default') === selectedCardFilter;
     const matchesBatch = selectedBatchFilter === 'ALL' || m.batchId === selectedBatchFilter;
     const matchesBranch = selectedBranchFilter === 'ALL' || m.branch === selectedBranchFilter;
     const matchesYear = selectedYearFilter === 'ALL' || m.year === selectedYearFilter;
 
-    return matchesSearch && matchesBatch && matchesBranch && matchesYear;
+    return matchesSearch && matchesCard && matchesBatch && matchesBranch && matchesYear;
   });
 
   return (
@@ -58,8 +62,25 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
               placeholder="Search name, roll, branch, year, mail..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ paddingLeft: '32px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', width: '250px', background: '#fff', color: '#0f172a' }}
+              style={{ paddingLeft: '32px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', width: '230px', background: '#fff', color: '#0f172a' }}
             />
+          </div>
+
+          {/* Card Template Filter Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CreditCard style={{ width: 15, height: 15, color: '#1d4ed8', flexShrink: 0 }} />
+            <select
+              value={selectedCardFilter}
+              onChange={(e) => setSelectedCardFilter(e.target.value)}
+              style={{ padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: '#eff6ff', color: '#1e40af', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="ALL">All Card Templates ({members.length})</option>
+              {Object.values(cardTemplates).map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({members.filter((m) => (m.cardId || 'default') === t.id).length})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Batch Filter Dropdown */}
@@ -70,7 +91,7 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
               onChange={(e) => setSelectedBatchFilter(e.target.value)}
               style={{ padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', background: '#fff', color: '#0f172a', outline: 'none' }}
             >
-              <option value="ALL">All Batches ({members.length})</option>
+              <option value="ALL">All Batches</option>
               {batches.map((b) => (
                 <option key={b.batchId} value={b.batchId}>
                   {b.name} ({members.filter((m) => m.batchId === b.batchId).length})
@@ -191,8 +212,12 @@ export default function AdminMembers({ members, batches, onAddMember, onImportBa
                     {member.designation}
                   </p>
 
-                  {/* Year, Branch, Section & Email Badges */}
+                  {/* Year, Branch, Section, Card Template & Email Badges */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', paddingTop: '4px' }}>
+                    <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '4px', fontSize: '10px', fontWeight: 700, padding: '1px 6px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <CreditCard style={{ width: 10, height: 10 }} />
+                      {cardTemplates[member.cardId || 'default']?.name || 'Default Card'}
+                    </span>
                     {member.branch && (
                       <span style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '10px', fontWeight: 700, padding: '1px 5px' }}>
                         {member.branch}

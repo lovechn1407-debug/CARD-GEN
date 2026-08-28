@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import FlippableIDCard from './FlippableIDCard';
 import { exportMembersToPdf, exportMembersToZip } from '../utils/cardExporter';
-import { Printer, FileText, Archive, CheckSquare, Square, Filter, Sparkles, CheckCircle2, RotateCw } from 'lucide-react';
+import { getCardTemplates } from '../utils/storage';
+import { Printer, FileText, Archive, CheckSquare, Square, Filter, Sparkles, CheckCircle2, RotateCw, CreditCard } from 'lucide-react';
 
 export default function AdminExport({ members, batches }) {
+  const cardTemplates = getCardTemplates();
+  const [selectedCardFilter, setSelectedCardFilter] = useState('ALL');
   const [selectedBatchFilter, setSelectedBatchFilter] = useState('ALL');
   const [selectedIds, setSelectedIds] = useState(members.map((m) => m.id));
   const [includeBack, setIncludeBack] = useState(true);
@@ -12,9 +15,11 @@ export default function AdminExport({ members, batches }) {
   const [exportProgress, setExportProgress] = useState({ current: 0, total: 0, name: '' });
   const [exportType, setExportType] = useState(null);
 
-  const displayMembers = members.filter(
-    (m) => selectedBatchFilter === 'ALL' || m.batchId === selectedBatchFilter
-  );
+  const displayMembers = members.filter((m) => {
+    const matchesCard = selectedCardFilter === 'ALL' || (m.cardId || 'default') === selectedCardFilter;
+    const matchesBatch = selectedBatchFilter === 'ALL' || m.batchId === selectedBatchFilter;
+    return matchesCard && matchesBatch;
+  });
 
   const isAllSelected = displayMembers.length > 0 && displayMembers.every((m) => selectedIds.includes(m.id));
 
@@ -96,24 +101,57 @@ export default function AdminExport({ members, batches }) {
 
         {/* Filter & Selection Row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', paddingTop: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Filter style={{ width: 14, height: 14, color: '#94a3b8' }} />
-            <select
-              value={selectedBatchFilter}
-              onChange={(e) => {
-                setSelectedBatchFilter(e.target.value);
-                const bm = members.filter((m) => e.target.value === 'ALL' || m.batchId === e.target.value);
-                setSelectedIds(bm.map((m) => m.id));
-              }}
-              style={{ padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '7px', fontSize: '13px', background: '#fff', color: '#0f172a', outline: 'none' }}
-            >
-              <option value="ALL">All Batches ({members.length} Cards)</option>
-              {batches.map((b) => (
-                <option key={b.batchId} value={b.batchId}>
-                  {b.name} ({members.filter((m) => m.batchId === b.batchId).length})
-                </option>
-              ))}
-            </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            
+            {/* Card Template Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CreditCard style={{ width: 14, height: 14, color: '#1d4ed8' }} />
+              <select
+                value={selectedCardFilter}
+                onChange={(e) => {
+                  setSelectedCardFilter(e.target.value);
+                  const filtered = members.filter((m) => {
+                    const matchesCard = e.target.value === 'ALL' || (m.cardId || 'default') === e.target.value;
+                    const matchesBatch = selectedBatchFilter === 'ALL' || m.batchId === selectedBatchFilter;
+                    return matchesCard && matchesBatch;
+                  });
+                  setSelectedIds(filtered.map((m) => m.id));
+                }}
+                style={{ padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '7px', fontSize: '12px', fontWeight: 600, background: '#eff6ff', color: '#1e40af', outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="ALL">All Card Templates ({members.length})</option>
+                {Object.values(cardTemplates).map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({members.filter((m) => (m.cardId || 'default') === t.id).length})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Batch Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Filter style={{ width: 14, height: 14, color: '#94a3b8' }} />
+              <select
+                value={selectedBatchFilter}
+                onChange={(e) => {
+                  setSelectedBatchFilter(e.target.value);
+                  const filtered = members.filter((m) => {
+                    const matchesCard = selectedCardFilter === 'ALL' || (m.cardId || 'default') === selectedCardFilter;
+                    const matchesBatch = e.target.value === 'ALL' || m.batchId === e.target.value;
+                    return matchesCard && matchesBatch;
+                  });
+                  setSelectedIds(filtered.map((m) => m.id));
+                }}
+                style={{ padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '7px', fontSize: '13px', background: '#fff', color: '#0f172a', outline: 'none' }}
+              >
+                <option value="ALL">All Batches</option>
+                {batches.map((b) => (
+                  <option key={b.batchId} value={b.batchId}>
+                    {b.name} ({members.filter((m) => m.batchId === b.batchId).length})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
