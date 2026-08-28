@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import AdminMembers from './components/AdminMembers';
 import AdminBatchEdits from './components/AdminBatchEdits';
 import AdminExport from './components/AdminExport';
@@ -25,6 +25,7 @@ import { subscribeToAuth, isEmailAuthorized } from './utils/firebase';
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
   const [activeTab, setActiveTab] = useState('members');
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const [members, setMembers] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -115,15 +116,28 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
-      <Navbar
+      <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         user={isAdminAuthenticated ? user : null}
         onOpenAddModal={() => setShowAddModal(true)}
         onOpenBulkModal={() => setShowBulkModal(true)}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
       />
 
-      <main style={{ flex: 1, maxWidth: '1280px', margin: '0 auto', width: '100%', padding: '32px 20px', boxSizing: 'border-box' }}>
+      <main 
+        style={{ 
+          flex: 1, 
+          maxWidth: '1280px', 
+          margin: '0 auto', 
+          width: '100%', 
+          padding: '32px 20px', 
+          paddingLeft: isCollapsed ? '92px' : '280px',
+          transition: 'padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          boxSizing: 'border-box' 
+        }}
+      >
         {activeTab === 'verify' && <PublicVerifyPortal />}
         {activeTab === 'edit-portal' && <PublicEditPortal />}
 
@@ -148,7 +162,16 @@ export default function App() {
         )}
       </main>
 
-      <footer style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '20px', marginTop: 'auto' }}>
+      <footer 
+        style={{ 
+          background: '#ffffff', 
+          borderTop: '1px solid #e2e8f0', 
+          padding: '20px', 
+          paddingLeft: isCollapsed ? '92px' : '280px',
+          transition: 'padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          marginTop: 'auto' 
+        }}
+      >
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '12px', color: '#64748b' }}>
           <div>
             <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Firebase Realtime Database
