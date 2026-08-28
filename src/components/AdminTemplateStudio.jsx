@@ -444,6 +444,21 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                   style={{ width: '100%', height: '6px', accentColor: '#0072ce', cursor: 'pointer' }}
                 />
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: '#334155' }}>
+                  <span>Font Height Stretch (Y Zoom)</span>
+                  <span>{((config.nameScaleY || 1.0) * 100).toFixed(0)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.5"
+                  step="0.05"
+                  value={config.nameScaleY ?? 1.0}
+                  onChange={(e) => setConfig({ ...config, nameScaleY: parseFloat(e.target.value) })}
+                  style={{ width: '100%', height: '6px', accentColor: '#0072ce', cursor: 'pointer' }}
+                />
+              </div>
 
               {/* Name Font Size */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -479,16 +494,99 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
                 />
               </div>
 
-              {/* Name Color */}
+              {/* Name Color Type (Solid vs Gradient) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Text Color</label>
-                <input
-                  type="color"
-                  value={config.nameColor}
-                  onChange={(e) => setConfig({ ...config, nameColor: e.target.value })}
-                  style={{ height: '32px', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
-                />
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Font Fill Mode</label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setConfig({ ...config, nameColorType: 'SOLID' })}
+                    style={{
+                      flex: 1,
+                      padding: '6px',
+                      borderRadius: '6px',
+                      border: config.nameColorType !== 'GRADIENT' ? '2px solid #0072ce' : '1px solid #cbd5e1',
+                      background: config.nameColorType !== 'GRADIENT' ? '#eff6ff' : '#ffffff',
+                      color: config.nameColorType !== 'GRADIENT' ? '#0072ce' : '#334155',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Solid
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfig({ ...config, nameColorType: 'GRADIENT' })}
+                    style={{
+                      flex: 1,
+                      padding: '6px',
+                      borderRadius: '6px',
+                      border: config.nameColorType === 'GRADIENT' ? '2px solid #9333ea' : '1px solid #cbd5e1',
+                      background: config.nameColorType === 'GRADIENT' ? '#faf5ff' : '#ffffff',
+                      color: config.nameColorType === 'GRADIENT' ? '#9333ea' : '#334155',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Gradient ✨
+                  </button>
+                </div>
               </div>
+
+              {/* Solid Color Picker */}
+              {config.nameColorType !== 'GRADIENT' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Solid Text Color</label>
+                  <input
+                    type="color"
+                    value={config.nameColor || '#FFFFFF'}
+                    onChange={(e) => setConfig({ ...config, nameColor: e.target.value })}
+                    style={{ height: '34px', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+                  />
+                </div>
+              ) : (
+                <>
+                  {/* Gradient Color 1 */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Gradient Color 1 (Start)</label>
+                    <input
+                      type="color"
+                      value={config.nameGradientColor1 || '#FFFFFF'}
+                      onChange={(e) => setConfig({ ...config, nameGradientColor1: e.target.value })}
+                      style={{ height: '34px', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  {/* Gradient Color 2 */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Gradient Color 2 (End)</label>
+                    <input
+                      type="color"
+                      value={config.nameGradientColor2 || '#FFD700'}
+                      onChange={(e) => setConfig({ ...config, nameGradientColor2: e.target.value })}
+                      style={{ height: '34px', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  {/* Gradient Direction */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Gradient Direction</label>
+                    <select
+                      value={config.nameGradientDirection || 'TOP_TO_BOTTOM'}
+                      onChange={(e) => setConfig({ ...config, nameGradientDirection: e.target.value })}
+                      style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', background: '#fff', color: '#0f172a', fontWeight: 600, outline: 'none' }}
+                    >
+                      <option value="TOP_TO_BOTTOM">⬇️ Top to Bottom</option>
+                      <option value="BOTTOM_TO_TOP">⬆️ Bottom to Top</option>
+                      <option value="LEFT_TO_RIGHT">➡️ Left to Right</option>
+                      <option value="RIGHT_TO_LEFT">⬅️ Right to Left</option>
+                      <option value="DIAGONAL">↘️ Diagonal (Top-Left to Bottom-Right)</option>
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

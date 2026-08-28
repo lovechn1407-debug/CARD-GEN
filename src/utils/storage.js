@@ -5,8 +5,13 @@ import { ref as rtdbRef, set as rtdbSet, onValue as rtdbOnValue, get as rtdbGet,
 export const DEFAULT_TEMPLATE_CONFIG = {
   nameY: 0.74,               // Name vertical position
   nameFontSize: 72,          // Name font size in px
+  nameScaleY: 1.0,           // Name vertical font height stretch multiplier
   nameLetterSpacing: 1,      // Name letter spacing in px
-  nameColor: '#FFFFFF',      // Name text color
+  nameColorType: 'SOLID',    // 'SOLID' or 'GRADIENT'
+  nameColor: '#FFFFFF',      // Name solid text color
+  nameGradientColor1: '#FFFFFF', // Gradient Start Color
+  nameGradientColor2: '#FFD700', // Gradient End Color
+  nameGradientDirection: 'TOP_TO_BOTTOM', // 'TOP_TO_BOTTOM', 'BOTTOM_TO_TOP', 'LEFT_TO_RIGHT', 'RIGHT_TO_LEFT', 'DIAGONAL'
   desigY: 0.83,              // Designation vertical position
   desigFontSize: 32,         // Designation font size in px
   desigLetterSpacing: 0,     // Designation letter spacing in px

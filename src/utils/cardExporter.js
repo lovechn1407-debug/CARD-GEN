@@ -141,12 +141,40 @@ export async function renderMemberCardCanvas(member) {
 
   const rawName = (member?.name || 'MEMBER NAME').toUpperCase().trim();
   let nameSize = (cfg.nameFontSize || 72) * (member?.nameFontSizeScale || 1.0);
+  const scaleY = cfg.nameScaleY ?? 1.0;
   const maxAllowedWidth = CARD_WIDTH - 60; // 548px max printable width
   const nameYPos = CARD_HEIGHT * (cfg.nameY ?? 0.74);
   const nameMode = member?.nameMode || 'AUTO';
 
-  ctx.fillStyle = cfg.nameColor || '#FFFFFF';
   ctx.letterSpacing = `${cfg.nameLetterSpacing ?? 1}px`;
+
+  // Helper to get FillStyle (Solid vs Gradient with Direction)
+  const getNameFillStyle = (textWidth, height) => {
+    if (cfg.nameColorType === 'GRADIENT') {
+      let grad;
+      const dir = cfg.nameGradientDirection || 'TOP_TO_BOTTOM';
+      const halfW = textWidth / 2;
+      const halfH = height / 2;
+
+      if (dir === 'LEFT_TO_RIGHT') {
+        grad = ctx.createLinearGradient(-halfW, 0, halfW, 0);
+      } else if (dir === 'RIGHT_TO_LEFT') {
+        grad = ctx.createLinearGradient(halfW, 0, -halfW, 0);
+      } else if (dir === 'BOTTOM_TO_TOP') {
+        grad = ctx.createLinearGradient(0, halfH, 0, -halfH);
+      } else if (dir === 'DIAGONAL') {
+        grad = ctx.createLinearGradient(-halfW, -halfH, halfW, halfH);
+      } else {
+        // TOP_TO_BOTTOM (Default)
+        grad = ctx.createLinearGradient(0, -halfH, 0, halfH);
+      }
+
+      grad.addColorStop(0, cfg.nameGradientColor1 || '#FFFFFF');
+      grad.addColorStop(1, cfg.nameGradientColor2 || '#FFD700');
+      return grad;
+    }
+    return cfg.nameColor || '#FFFFFF';
+  };
 
   if (nameMode === 'TWO_LINES' || (nameMode === 'AUTO' && member?.nameWrap)) {
     const words = rawName.split(' ');
@@ -170,12 +198,18 @@ export async function renderMemberCardCanvas(member) {
       ctx.font = `normal ${Math.floor(twoLineSize * scale)}px "Bebas Neue", "Arial Black", sans-serif`;
     }
 
+    ctx.save();
+    ctx.translate(CARD_WIDTH / 2, nameYPos);
+    if (scaleY !== 1.0) ctx.scale(1, scaleY);
+    ctx.fillStyle = getNameFillStyle(maxW, twoLineSize * 2);
+
     if (line2) {
-      ctx.fillText(line1, CARD_WIDTH / 2, nameYPos - twoLineSize * 0.4);
-      ctx.fillText(line2, CARD_WIDTH / 2, nameYPos + twoLineSize * 0.5);
+      ctx.fillText(line1, 0, -twoLineSize * 0.4);
+      ctx.fillText(line2, 0, twoLineSize * 0.5);
     } else {
-      ctx.fillText(line1, CARD_WIDTH / 2, nameYPos);
+      ctx.fillText(line1, 0, 0);
     }
+    ctx.restore();
   } else {
     ctx.font = `normal ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
     let textWidth = ctx.measureText(rawName).width;
@@ -184,9 +218,15 @@ export async function renderMemberCardCanvas(member) {
       const fitSize = Math.floor(nameSize * (maxAllowedWidth / textWidth));
       nameSize = Math.max(28, fitSize);
       ctx.font = `normal ${nameSize}px "Bebas Neue", "Arial Black", sans-serif`;
+      textWidth = ctx.measureText(rawName).width;
     }
 
-    ctx.fillText(rawName, CARD_WIDTH / 2, nameYPos);
+    ctx.save();
+    ctx.translate(CARD_WIDTH / 2, nameYPos);
+    if (scaleY !== 1.0) ctx.scale(1, scaleY);
+    ctx.fillStyle = getNameFillStyle(textWidth, nameSize);
+    ctx.fillText(rawName, 0, 0);
+    ctx.restore();
   }
 
   const rawDesig = member.designation || 'Creative Designing';
