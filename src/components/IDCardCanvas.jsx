@@ -27,6 +27,16 @@ export default function IDCardCanvas({
   const [fadeOverlayImage, setFadeOverlayImage] = useState(null);
   const [photoImage, setPhotoImage] = useState(null);
   const [refGuideImage, setRefGuideImage] = useState(null);
+  const [isImageLoading, setIsImageLoading] = useState(true);
+
+  // Safety fallback timer to prevent infinite loading state
+  useEffect(() => {
+    setIsImageLoading(true);
+    const timer = setTimeout(() => {
+      setIsImageLoading(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [member?.id, member?.cardId, member?.photoUrl]);
 
   // Lock mobile page scrolling on touch drag when interactive
   useEffect(() => {
@@ -52,14 +62,21 @@ export default function IDCardCanvas({
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = bgSrc;
-    img.onload = () => setBgImage(img);
+    img.onload = () => {
+      setBgImage(img);
+      if (!member?.photoUrl || photoImage) setIsImageLoading(false);
+    };
     img.onerror = () => {
       if (bgSrc !== 'card_bg.png' && !bgSrc.startsWith('http')) {
         const img2 = new Image();
         img2.src = 'card_bg.png';
-        img2.onload = () => setBgImage(img2);
+        img2.onload = () => {
+          setBgImage(img2);
+          setIsImageLoading(false);
+        };
       } else {
         setBgImage(null);
+        setIsImageLoading(false);
       }
     };
   }, [activeTemplate?.bgUrl, member?.cardId]);
@@ -81,14 +98,19 @@ export default function IDCardCanvas({
   useEffect(() => {
     if (!member?.photoUrl) {
       setPhotoImage(null);
+      if (bgImage) setIsImageLoading(false);
       return;
     }
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = member.photoUrl;
-    img.onload = () => setPhotoImage(img);
+    img.onload = () => {
+      setPhotoImage(img);
+      setIsImageLoading(false);
+    };
     img.onerror = () => {
       setPhotoImage(null);
+      setIsImageLoading(false);
     };
   }, [member?.photoUrl]);
 
@@ -407,6 +429,104 @@ export default function IDCardCanvas({
         height={CARD_HEIGHT}
         style={{ width: '100%', height: 'auto', display: 'block', aspectRatio: '608 / 1000' }}
       />
+
+      {/* ChatGPT DALL-E Style Shimmer Loading Overlay */}
+      {isImageLoading && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '12px',
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, #090d16 0%, #111827 50%, #0f172a 100%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20,
+            pointerEvents: 'none',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            border: '1px solid rgba(255,255,255,0.08)'
+          }}
+        >
+          {/* ChatGPT Diagonal Shimmer Wave */}
+          <div className="chatgpt-shimmer-wave" />
+
+          {/* Scanning Laser Beam */}
+          <div className="chatgpt-scan-beam" />
+
+          {/* Center Glow Badge */}
+          <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '80%' }}>
+            {/* Circle Photo Skeleton */}
+            <div style={{ position: 'relative', width: '110px', height: '110px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: '2px dashed rgba(0, 210, 255, 0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 25px rgba(0, 210, 255, 0.15)' }}>
+              <div style={{ width: '85px', height: '85px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
+            </div>
+
+            {/* ChatGPT Status Badge */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(0, 210, 255, 0.4)', borderRadius: '20px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(0, 210, 255, 0.2)' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00d2ff', animation: 'pingPulse 1.2s ease-in-out infinite' }} />
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#f1f5f9', letterSpacing: '0.6px', textTransform: 'uppercase', fontFamily: 'sans-serif' }}>
+                Rendering ID Card<span className="dot-anim">...</span>
+              </span>
+            </div>
+
+            {/* Text Skeleton Bars */}
+            <div style={{ width: '70%', height: '14px', borderRadius: '7px', background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ width: '45%', height: '10px', borderRadius: '5px', background: 'rgba(255,255,255,0.05)' }} />
+          </div>
+
+          <style>{`
+            @keyframes chatgptShimmer {
+              0% { transform: translateX(-150%) rotate(25deg); }
+              100% { transform: translateX(150%) rotate(25deg); }
+            }
+            @keyframes scanBeam {
+              0% { top: 0%; opacity: 0.1; }
+              50% { top: 92%; opacity: 0.95; }
+              100% { top: 0%; opacity: 0.1; }
+            }
+            @keyframes pingPulse {
+              0% { transform: scale(0.9); opacity: 0.6; box-shadow: 0 0 0 0 rgba(0,210,255,0.7); }
+              50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 10px 4px rgba(0,210,255,0.9); }
+              100% { transform: scale(0.9); opacity: 0.6; box-shadow: 0 0 0 0 rgba(0,210,255,0.7); }
+            }
+            @keyframes dotPulse {
+              0%, 100% { opacity: 0.2; }
+              50% { opacity: 1; }
+            }
+            .chatgpt-shimmer-wave {
+              position: absolute;
+              top: -60%;
+              left: -60%;
+              width: 220%;
+              height: 220%;
+              background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.05) 42%,
+                rgba(0, 210, 255, 0.22) 50%,
+                rgba(255, 255, 255, 0.05) 58%,
+                rgba(255, 255, 255, 0) 100%
+              );
+              animation: chatgptShimmer 2.2s infinite linear;
+              pointer-events: none;
+            }
+            .chatgpt-scan-beam {
+              position: absolute;
+              left: 0;
+              right: 0;
+              height: 3px;
+              background: linear-gradient(90deg, transparent, #00d2ff, #3b82f6, #00d2ff, transparent);
+              box-shadow: 0 0 18px #00d2ff, 0 0 35px #3b82f6;
+              animation: scanBeam 2.5s ease-in-out infinite;
+              pointer-events: none;
+            }
+            .dot-anim {
+              animation: dotPulse 1.4s infinite;
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }
