@@ -98,10 +98,10 @@ export default function Navbar({ activeTab, setActiveTab, user, onOpenAddModal, 
 
         {/* Brand */}
         <div style={styles.brand}>
-          <div style={styles.logoBox}>EC</div>
+          <img src="/ecell_logo.png" alt="E-CELL Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
           <div>
             <div>
-              <span style={styles.brandName}>CARD-GEN</span>
+              <span style={styles.brandName}>CARD GENERATION PANEL</span>
               <span style={styles.badge}>FIREBASE</span>
             </div>
             <div style={styles.brandSub}>I.T.S Engineering College</div>
