@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import IDCardCanvas from './IDCardCanvas';
 import FlippableIDCard from './FlippableIDCard';
 import TiltCardWrapper from './TiltCardWrapper';
-import { subscribeMembers, getMemberById } from '../utils/storage';
+import { subscribeMembers, subscribeCardTemplates, getMemberById } from '../utils/storage';
 import { ensureAnonymousAuth } from '../utils/firebase';
 import { ShieldCheck, ShieldAlert, CheckCircle, Search, Calendar, Phone, Award, User, Loader } from 'lucide-react';
 
@@ -12,31 +12,43 @@ export default function PublicVerifyPortal() {
   const [searched, setSearched] = useState(false);
   const [dbLoaded, setDbLoaded] = useState(false); // Wait for Firebase to load before lookup
 
-  // On mount: get anonymous auth, subscribe to Realtime DB, THEN do the QR lookup
+  // On mount: get anonymous auth, subscribe to Realtime DB members AND card templates, THEN do QR lookup
   useEffect(() => {
     ensureAnonymousAuth();
+    let membersReady = false;
+    let templatesReady = false;
 
-    // Subscribe to members from Firebase Realtime Database
-    const unsub = subscribeMembers((list) => {
+    const performLookup = () => {
+      if (!membersReady || !templatesReady) return;
       setDbLoaded(true);
 
-      // After DB loads, re-check if we have a pending QR lookup
       const hash = window.location.hash;
-      const search = window.location.search;
-      const idMatch = hash.match(/id=([^&]+)/) || search.match(/id=([^&]+)/);
-      const cardMatch = hash.match(/cardId=([^&]+)/) || search.match(/cardId=([^&]+)/);
-
-      if (idMatch?.[1]) {
-        const queryId = decodeURIComponent(idMatch[1]);
-        const queryCardId = cardMatch?.[1] ? decodeURIComponent(cardMatch[1]) : null;
+      const match = hash.match(/id=([^&]+)/) || window.location.search.match(/id=([^&]+)/);
+      if (match?.[1]) {
+        const queryId = decodeURIComponent(match[1]);
         setMemberId(queryId);
-        // getMemberById reads LIVE data with cardId accuracy
-        setMember(getMemberById(queryId, queryCardId));
+        const found = getMemberById(queryId);
+        setMember(found);
         setSearched(true);
+      } else if (memberId) {
+        setMember(getMemberById(memberId));
       }
+    };
+
+    const unsubMembers = subscribeMembers(() => {
+      membersReady = true;
+      performLookup();
     });
 
-    return () => unsub && unsub();
+    const unsubTemplates = subscribeCardTemplates(() => {
+      templatesReady = true;
+      performLookup();
+    });
+
+    return () => {
+      unsubMembers && unsubMembers();
+      unsubTemplates && unsubTemplates();
+    };
   }, []);
 
   const handleSearchSubmit = (e) => {

@@ -279,21 +279,11 @@ export function getMembers() {
   return cachedMembers;
 }
 
-export function getMemberById(id, cardId = null) {
+export function getMemberById(id) {
   if (!id) return null;
   const searchId = id.toString().trim();
-
-  // 1. First priority: exact unique primary key match (m.id)
-  let member = cachedMembers.find((m) => m.id === searchId);
-  if (member) return member;
-
-  // 2. Second priority: match collegeRollNo AND cardId if cardId specified
-  if (cardId) {
-    member = cachedMembers.find((m) => m.collegeRollNo === searchId && (m.cardId || 'default') === cardId);
-    if (member) return member;
-  }
-
-  // 3. Third priority: match collegeRollNo fallback
+  const matchById = cachedMembers.find((m) => m.id === searchId);
+  if (matchById) return matchById;
   return cachedMembers.find((m) => m.collegeRollNo === searchId);
 }
 
