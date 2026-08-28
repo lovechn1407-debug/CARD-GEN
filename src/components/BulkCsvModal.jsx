@@ -1,30 +1,33 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse';
 import { uploadToImgBB } from '../utils/imgbb';
-import { X, FileSpreadsheet, Upload, Check, Sparkles, Download } from 'lucide-react';
+import { getCardTemplates } from '../utils/storage';
+import { X, FileSpreadsheet, Upload, Check, Sparkles, Download, CreditCard } from 'lucide-react';
 
 const inp = { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', color: '#0f172a', background: '#fff', outline: 'none', boxSizing: 'border-box' };
 const lbl = { display: 'block', fontSize: '11px', fontWeight: 700, color: '#334155', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.4px' };
 
 export default function BulkCsvModal({ onClose, onImportSuccess }) {
+  const cardTemplates = getCardTemplates();
   const [csvFile, setCsvFile] = useState(null);
   const [parsedRows, setParsedRows] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [batchName, setBatchName] = useState(`Batch ${new Date().toLocaleDateString('en-GB')}`);
+  const [selectedCardId, setSelectedCardId] = useState('default');
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
   const [mappings, setMappings] = useState({
     collegeRollNo: '', name: '', designation: '',
-    year: '', branch: '', section: '', email: '',
+    cardId: '', year: '', branch: '', section: '', email: '',
     validTill: '', phone: '', bloodGroup: '', photoUrl: ''
   });
   const [imageFiles, setImageFiles] = useState([]);
 
   const handleDownloadSampleCsv = () => {
-    const csvContent = "CollegeRollNo,Name,Designation,Year,Branch,Section,Email,ValidTill,Phone,BloodGroup,PhotoUrl\n" +
-      "2100290130085,LOVE CHAUHAN,Creative Designing,3rd Year,CSE,A,love.chauhan@ecell.in,2026-08-31,9876543210,O+,https://i.imgur.com/8Q9Z5b4.png\n" +
-      "2100290130086,AARAV SHARMA,Technical Lead,4th Year,ECE,B,aarav.sharma@ecell.in,2026-08-31,9876543211,A+,\n" +
-      "2100290130087,ANANYA VERMA,Event Manager,2nd Year,IT,C,ananya.verma@ecell.in,2026-08-31,9876543212,B+,";
+    const csvContent = "CollegeRollNo,Name,Designation,CardType,Year,Branch,Section,Email,ValidTill,Phone,BloodGroup,PhotoUrl\n" +
+      "2100290130085,LOVE CHAUHAN,Creative Designing,default,3rd Year,CSE,A,love.chauhan@ecell.in,2026-08-31,9876543210,O+,https://i.imgur.com/8Q9Z5b4.png\n" +
+      "2100290130086,AARAV SHARMA,Technical Lead,volunteer,4th Year,ECE,B,aarav.sharma@ecell.in,2026-08-31,9876543211,A+,\n" +
+      "2100290130087,ANANYA VERMA,Event Manager,event,2nd Year,IT,C,ananya.verma@ecell.in,2026-08-31,9876543212,B+,";
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -54,6 +57,7 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
             if (lower.includes('roll') || lower.includes('id')) autoMap.collegeRollNo = field;
             else if (lower.includes('name')) autoMap.name = field;
             else if (lower.includes('designation') || lower.includes('role')) autoMap.designation = field;
+            else if (lower.includes('card') || lower.includes('template') || lower.includes('type')) autoMap.cardId = field;
             else if (lower.includes('year')) autoMap.year = field;
             else if (lower.includes('branch') || lower.includes('dept')) autoMap.branch = field;
             else if (lower.includes('sec')) autoMap.section = field;
@@ -79,6 +83,7 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
       const rollNo = (row[mappings.collegeRollNo] || `ROLL-${i + 1}`).toString().trim();
       const name = (row[mappings.name] || 'MEMBER').toString().trim();
       const desig = (row[mappings.designation] || 'E-Cell Team').toString().trim();
+      const cardId = (row[mappings.cardId] || selectedCardId || 'default').toString().trim();
       const year = (row[mappings.year] || '3rd Year').toString().trim();
       const branch = (row[mappings.branch] || 'CSE').toString().trim();
       const section = (row[mappings.section] || 'A').toString().trim();
@@ -100,6 +105,7 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
         collegeRollNo: rollNo,
         name,
         designation: desig,
+        cardId: cardTemplates[cardId] ? cardId : (selectedCardId || 'default'),
         year,
         branch,
         section,
@@ -163,6 +169,27 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
             </div>
           </div>
 
+          {/* Select Card Template for CSV Import */}
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px' }}>
+            <label style={{ ...lbl, color: '#1d4ed8', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CreditCard style={{ width: 14, height: 14 }} /> Target Card Design / Template for Bulk Import *
+            </label>
+            <select
+              value={selectedCardId}
+              onChange={(e) => setSelectedCardId(e.target.value)}
+              style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', color: '#0f172a', background: '#fff', fontWeight: 600, outline: 'none' }}
+            >
+              {Object.values(cardTemplates).map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name} ({template.id})
+                </option>
+              ))}
+            </select>
+            <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0' }}>
+              All imported members in this CSV batch will be assigned to this card template (or mapped individually from CSV if a CardType column is present).
+            </p>
+          </div>
+
           {/* Optional batch photos */}
           <div>
             <label style={lbl}>Batch Photos (Optional — name files with Roll No or Name)</label>
@@ -188,6 +215,7 @@ export default function BulkCsvModal({ onClose, onImportSuccess }) {
                   { key: 'collegeRollNo', label: 'ID / Roll No *' },
                   { key: 'name', label: 'Full Name *' },
                   { key: 'designation', label: 'Designation *' },
+                  { key: 'cardId', label: 'Card Template / Type' },
                   { key: 'year', label: 'Year' },
                   { key: 'branch', label: 'Branch' },
                   { key: 'section', label: 'Section' },
