@@ -263,8 +263,9 @@ export async function renderMemberCardBackCanvas(member) {
   }
 
   // 1. Generate QR Code
-  const rollNo = member?.collegeRollNo || member?.id || '2100290130085';
-  const verifyUrl = `${window.location.origin}${window.location.pathname}#/verify?id=${encodeURIComponent(rollNo)}`;
+  const targetId = member?.id || member?.collegeRollNo || '2100290130085';
+  const targetCardId = member?.cardId || 'default';
+  const verifyUrl = `${window.location.origin}${window.location.pathname}#/verify?id=${encodeURIComponent(targetId)}&cardId=${encodeURIComponent(targetCardId)}`;
   
   let qrImg = null;
   try {

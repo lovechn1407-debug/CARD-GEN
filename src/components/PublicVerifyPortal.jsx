@@ -22,12 +22,16 @@ export default function PublicVerifyPortal() {
 
       // After DB loads, re-check if we have a pending QR lookup
       const hash = window.location.hash;
-      const match = hash.match(/id=([^&]+)/) || window.location.search.match(/id=([^&]+)/);
-      if (match?.[1]) {
-        const queryId = decodeURIComponent(match[1]);
+      const search = window.location.search;
+      const idMatch = hash.match(/id=([^&]+)/) || search.match(/id=([^&]+)/);
+      const cardMatch = hash.match(/cardId=([^&]+)/) || search.match(/cardId=([^&]+)/);
+
+      if (idMatch?.[1]) {
+        const queryId = decodeURIComponent(idMatch[1]);
+        const queryCardId = cardMatch?.[1] ? decodeURIComponent(cardMatch[1]) : null;
         setMemberId(queryId);
-        // getMemberById now reads the LIVE data from Firebase
-        setMember(getMemberById(queryId));
+        // getMemberById reads LIVE data with cardId accuracy
+        setMember(getMemberById(queryId, queryCardId));
         setSearched(true);
       }
     });

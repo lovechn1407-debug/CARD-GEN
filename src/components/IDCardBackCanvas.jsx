@@ -38,8 +38,9 @@ export default function IDCardBackCanvas({
 
   // 2. Generate QR Code Image
   useEffect(() => {
-    const rollNo = member?.collegeRollNo || member?.id || '2100290130085';
-    const verifyUrl = `${window.location.origin}${window.location.pathname}#/verify?id=${encodeURIComponent(rollNo)}`;
+    const targetId = member?.id || member?.collegeRollNo || '2100290130085';
+    const targetCardId = member?.cardId || 'default';
+    const verifyUrl = `${window.location.origin}${window.location.pathname}#/verify?id=${encodeURIComponent(targetId)}&cardId=${encodeURIComponent(targetCardId)}`;
 
     QRCode.toDataURL(verifyUrl, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
       .then((url) => {

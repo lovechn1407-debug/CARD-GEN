@@ -279,8 +279,22 @@ export function getMembers() {
   return cachedMembers;
 }
 
-export function getMemberById(id) {
-  return cachedMembers.find((m) => m.id === id || m.collegeRollNo === id);
+export function getMemberById(id, cardId = null) {
+  if (!id) return null;
+  const searchId = id.toString().trim();
+
+  // 1. First priority: exact unique primary key match (m.id)
+  let member = cachedMembers.find((m) => m.id === searchId);
+  if (member) return member;
+
+  // 2. Second priority: match collegeRollNo AND cardId if cardId specified
+  if (cardId) {
+    member = cachedMembers.find((m) => m.collegeRollNo === searchId && (m.cardId || 'default') === cardId);
+    if (member) return member;
+  }
+
+  // 3. Third priority: match collegeRollNo fallback
+  return cachedMembers.find((m) => m.collegeRollNo === searchId);
 }
 
 export async function updateMember(updatedMember) {
