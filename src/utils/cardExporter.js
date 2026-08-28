@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import JSZip from 'jszip';
 import QRCode from 'qrcode';
 import { CARD_WIDTH, CARD_HEIGHT } from '../components/IDCardCanvas';
-import { getTemplateConfig, getCardTemplateById } from './storage';
+import { getTemplateConfig, getCardTemplateById, DEFAULT_TEMPLATE_CONFIG } from './storage';
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -24,7 +24,7 @@ export async function renderMemberCardCanvas(member) {
   const ctx = canvas.getContext('2d');
   
   const activeTemplate = getCardTemplateById(member?.cardId || 'default');
-  const cfg = activeTemplate?.config || getTemplateConfig();
+  const cfg = activeTemplate?.config ? { ...DEFAULT_TEMPLATE_CONFIG, ...activeTemplate.config } : getTemplateConfig();
 
   let bgImg = null;
   let fadeImg = null;
@@ -212,7 +212,7 @@ export async function renderMemberCardBackCanvas(member) {
   const ctx = canvas.getContext('2d');
   
   const activeTemplate = getCardTemplateById(member?.cardId || 'default');
-  const cfg = activeTemplate?.config || getTemplateConfig();
+  const cfg = activeTemplate?.config ? { ...DEFAULT_TEMPLATE_CONFIG, ...activeTemplate.config } : getTemplateConfig();
 
   let backBgImg = null;
   const backSrc = activeTemplate?.backBgUrl || '/card_back.png';

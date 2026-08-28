@@ -47,6 +47,16 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
     };
   }, []);
 
+  // Update layout config state whenever activeCardId changes or templates refresh
+  useEffect(() => {
+    const currentCardConfig = cardTemplates[activeCardId]?.config;
+    if (currentCardConfig) {
+      setConfig({ ...DEFAULT_TEMPLATE_CONFIG, ...currentCardConfig });
+    } else {
+      setConfig({ ...DEFAULT_TEMPLATE_CONFIG });
+    }
+  }, [activeCardId, cardTemplates[activeCardId]?.config]);
+
   const activeTemplate = cardTemplates[activeCardId] || cardTemplates['default'] || {
     id: 'default',
     name: 'Core Team (Default)',

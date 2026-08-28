@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getTemplateConfig, getCardTemplateById } from '../utils/storage';
+import { getTemplateConfig, getCardTemplateById, DEFAULT_TEMPLATE_CONFIG } from '../utils/storage';
 
 export const CARD_WIDTH = 608;
 export const CARD_HEIGHT = 1000;
@@ -21,7 +21,7 @@ export default function IDCardCanvas({
 
   const transform = member?.photoTransform || { x: 0, y: -20, scale: 1, rotation: 0 };
   const activeTemplate = customCardTemplate || getCardTemplateById(member?.cardId || 'default');
-  const cfg = customConfig || activeTemplate?.config || getTemplateConfig();
+  const cfg = customConfig || (activeTemplate?.config ? { ...DEFAULT_TEMPLATE_CONFIG, ...activeTemplate.config } : getTemplateConfig());
 
   const [bgImage, setBgImage] = useState(null);
   const [fadeOverlayImage, setFadeOverlayImage] = useState(null);

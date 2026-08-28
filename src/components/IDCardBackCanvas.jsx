@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { CARD_WIDTH, CARD_HEIGHT } from './IDCardCanvas';
-import { getTemplateConfig, getCardTemplateById } from '../utils/storage';
+import { getTemplateConfig, getCardTemplateById, DEFAULT_TEMPLATE_CONFIG } from '../utils/storage';
 
 export default function IDCardBackCanvas({
   member,
@@ -12,7 +12,7 @@ export default function IDCardBackCanvas({
 }) {
   const canvasRef = useRef(null);
   const activeTemplate = customCardTemplate || getCardTemplateById(member?.cardId || 'default');
-  const cfg = customConfig || activeTemplate?.config || getTemplateConfig();
+  const cfg = customConfig || (activeTemplate?.config ? { ...DEFAULT_TEMPLATE_CONFIG, ...activeTemplate.config } : getTemplateConfig());
 
   const [backBgImg, setBackBgImg] = useState(null);
   const [qrImage, setQrImage] = useState(null);
