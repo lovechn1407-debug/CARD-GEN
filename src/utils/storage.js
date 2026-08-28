@@ -188,13 +188,22 @@ export function subscribeCardTemplates(callback) {
   return rtdbOnValue(templatesRef, (snapshot) => {
     const val = snapshot.val();
     if (!val) {
-      rtdbSet(templatesRef, DEFAULT_CARD_TEMPLATES).catch(() => {});
-      cachedCardTemplates = { ...DEFAULT_CARD_TEMPLATES };
-      callback(DEFAULT_CARD_TEMPLATES);
+      const initialTemplates = {
+        default: {
+          id: 'default',
+          name: 'Core Team (Default)',
+          bgUrl: '',
+          backBgUrl: '',
+          config: { ...cachedConfig }
+        }
+      };
+      rtdbSet(templatesRef, initialTemplates).catch(() => {});
+      cachedCardTemplates = initialTemplates;
+      callback(initialTemplates);
       return;
     }
-    cachedCardTemplates = { ...DEFAULT_CARD_TEMPLATES, ...val };
-    callback(cachedCardTemplates);
+    cachedCardTemplates = val;
+    callback(val);
   }, () => {
     callback(cachedCardTemplates);
   });
@@ -223,7 +232,20 @@ export function getCardTemplates() {
 }
 
 export function getCardTemplateById(cardId) {
-  return cachedCardTemplates[cardId] || cachedCardTemplates['default'] || DEFAULT_CARD_TEMPLATES['default'];
+  const tmpl = cachedCardTemplates[cardId] || cachedCardTemplates['default'];
+  if (tmpl) {
+    return {
+      ...tmpl,
+      config: { ...cachedConfig, ...tmpl.config }
+    };
+  }
+  return {
+    id: 'default',
+    name: 'Core Team (Default)',
+    bgUrl: '',
+    backBgUrl: '',
+    config: { ...cachedConfig }
+  };
 }
 
 export async function saveCardTemplate(templateObj) {

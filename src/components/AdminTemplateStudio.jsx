@@ -50,12 +50,13 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
   // Update layout config state whenever activeCardId changes or templates refresh
   useEffect(() => {
     const currentCardConfig = cardTemplates[activeCardId]?.config;
+    const baseConfig = getTemplateConfig();
     if (currentCardConfig) {
-      setConfig({ ...DEFAULT_TEMPLATE_CONFIG, ...currentCardConfig });
+      setConfig({ ...baseConfig, ...currentCardConfig });
     } else {
-      setConfig({ ...DEFAULT_TEMPLATE_CONFIG });
+      setConfig({ ...baseConfig });
     }
-  }, [activeCardId, cardTemplates[activeCardId]?.config]);
+  }, [activeCardId, cardTemplates]);
 
   const activeTemplate = cardTemplates[activeCardId] || cardTemplates['default'] || {
     id: 'default',
@@ -131,12 +132,13 @@ export default function AdminTemplateStudio({ members, onConfigSaved }) {
       return;
     }
     const newId = `card_${Date.now().toString().slice(-6)}`;
+    const currentBaseConfig = { ...getTemplateConfig(), ...config };
     const templateObj = {
       id: newId,
       name: newCardData.name.trim(),
       bgUrl: newCardData.bgUrl || '',
       backBgUrl: newCardData.backBgUrl || '',
-      config: { ...config }
+      config: currentBaseConfig
     };
     await saveCardTemplate(templateObj);
     setActiveCardId(newId);
