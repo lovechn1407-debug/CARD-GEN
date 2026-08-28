@@ -77,7 +77,7 @@ export default function PublicVerifyPortal() {
       <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '12px 16px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/ecell_logo.png" alt="E-CELL Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+            <img src="/ecell_logo.png" alt="E-CELL Logo" style={{ height: '44px', width: 'auto', objectFit: 'contain' }} />
             <div>
               <h1 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.2 }}>E-CELL Official Verification</h1>
               <p style={{ fontSize: '10px', color: '#64748b', fontStyle: 'italic', margin: 0 }}>I.T.S Engineering College</p>
@@ -140,7 +140,7 @@ export default function PublicVerifyPortal() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px', alignItems: 'start' }}>
               <div style={{ width: '100%', maxWidth: '270px', margin: '0 auto' }}>
                 <TiltCardWrapper>
-                  <FlippableIDCard member={member} interactive={false} overlayOpacity={1.0} showFlipButton={true} />
+                  <FlippableIDCard member={member} interactive={false} overlayOpacity={1.0} showFlipButton={true} showLoadingOverlay={true} />
                 </TiltCardWrapper>
               </div>
 

@@ -12,7 +12,8 @@ export default function FlippableIDCard({
   showFlipButton = true,
   isFlipped: controlledFlipped,
   onFlipToggle,
-  onModifyClick
+  onModifyClick,
+  showLoadingOverlay = false
 }) {
   const [internalFlipped, setInternalFlipped] = useState(false);
   const isFlipped = controlledFlipped !== undefined ? controlledFlipped : internalFlipped;
@@ -53,6 +54,7 @@ export default function FlippableIDCard({
               overlayOpacity={overlayOpacity}
               templateConfig={templateConfig}
               onTransformChange={onTransformChange}
+              showLoadingOverlay={showLoadingOverlay}
             />
           </div>
 
@@ -67,7 +69,11 @@ export default function FlippableIDCard({
               width: '100%'
             }}
           >
-            <IDCardBackCanvas member={member} templateConfig={templateConfig} />
+            <IDCardBackCanvas
+              member={member}
+              templateConfig={templateConfig}
+              showLoadingOverlay={showLoadingOverlay}
+            />
           </div>
         </div>
 

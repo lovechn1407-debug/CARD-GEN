@@ -12,6 +12,7 @@ export default function IDCardCanvas({
   templateConfig: customConfig,
   cardTemplate: customCardTemplate,
   onTransformChange,
+  showLoadingOverlay = false,
   className = ''
 }) {
   const canvasRef = useRef(null);
@@ -435,15 +436,14 @@ export default function IDCardCanvas({
           height: 'auto',
           display: 'block',
           aspectRatio: '608 / 1000',
-          filter: isCardFullyLoaded ? 'blur(0px)' : 'blur(12px)',
-          opacity: isCardFullyLoaded ? 1 : 0.75,
-          transition: 'filter 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease-out',
-          transform: isCardFullyLoaded ? 'scale(1)' : 'scale(1.02)'
+          filter: showLoadingOverlay && !isCardFullyLoaded ? 'blur(12px)' : 'none',
+          opacity: showLoadingOverlay && !isCardFullyLoaded ? 0.75 : 1,
+          transition: 'filter 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease-out'
         }}
       />
 
-      {/* Loading Progress Shimmer Wave Overlay */}
-      {!isCardFullyLoaded && (
+      {/* Loading Progress Shimmer Wave Overlay (Only on Verification Page) */}
+      {showLoadingOverlay && !isCardFullyLoaded && (
         <div
           style={{
             position: 'absolute',
@@ -453,7 +453,7 @@ export default function IDCardCanvas({
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(15, 23, 42, 0.5)',
+            background: 'rgba(15, 23, 42, 0.55)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
             padding: '20px',

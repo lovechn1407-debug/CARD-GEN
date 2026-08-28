@@ -8,6 +8,7 @@ export default function IDCardBackCanvas({
   member,
   templateConfig: customConfig,
   cardTemplate: customCardTemplate,
+  showLoadingOverlay = false,
   className = '',
   style = {}
 }) {
@@ -192,15 +193,14 @@ export default function IDCardBackCanvas({
           height: 'auto',
           display: 'block',
           aspectRatio: '608 / 1000',
-          filter: isBackBgLoaded ? 'blur(0px)' : 'blur(12px)',
-          opacity: isBackBgLoaded ? 1 : 0.75,
-          transition: 'filter 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease-out',
-          transform: isBackBgLoaded ? 'scale(1)' : 'scale(1.02)'
+          filter: showLoadingOverlay && !isBackBgLoaded ? 'blur(12px)' : 'none',
+          opacity: showLoadingOverlay && !isBackBgLoaded ? 0.75 : 1,
+          transition: 'filter 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease-out'
         }}
       />
 
-      {/* Loading Progress Shimmer Wave Overlay */}
-      {!isBackBgLoaded && (
+      {/* Loading Progress Shimmer Wave Overlay (Only on Verification Page) */}
+      {showLoadingOverlay && !isBackBgLoaded && (
         <div
           style={{
             position: 'absolute',
@@ -210,7 +210,7 @@ export default function IDCardBackCanvas({
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(15, 23, 42, 0.5)',
+            background: 'rgba(15, 23, 42, 0.55)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
             padding: '20px',

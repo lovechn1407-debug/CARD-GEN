@@ -125,7 +125,7 @@ export default function PublicEditPortal() {
       <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '0 20px' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '60px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/ecell_logo.png" alt="E-CELL Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+            <img src="/ecell_logo.png" alt="E-CELL Logo" style={{ height: '44px', width: 'auto', objectFit: 'contain' }} />
             <div>
               <h1 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>E-CELL Member Portal</h1>
               <p style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', margin: 0 }}>Self-Service Card Photo Editor</p>
