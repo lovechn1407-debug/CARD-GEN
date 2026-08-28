@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
+import TopHeader from './components/TopHeader';
 import AdminMembers from './components/AdminMembers';
 import AdminBatchEdits from './components/AdminBatchEdits';
 import AdminExport from './components/AdminExport';
@@ -9,18 +10,21 @@ import PublicVerifyPortal from './components/PublicVerifyPortal';
 import PublicEditPortal from './components/PublicEditPortal';
 import AddMemberModal from './components/AddMemberModal';
 import BulkCsvModal from './components/BulkCsvModal';
-import { 
-  subscribeMembers, 
-  subscribeBatches, 
+import {
+  subscribeMembers,
+  subscribeBatches,
   subscribeTemplateConfig,
   subscribeCardTemplates,
-  saveMembers, 
-  saveBatches, 
-  updateMember, 
+  saveMembers,
+  saveBatches,
+  updateMember,
   deleteMember,
   getTemplateConfig
 } from './utils/storage';
-import { subscribeToAuth, isEmailAuthorized } from './utils/firebase';
+import { subscribeToAuth } from './utils/firebase';
+
+// Sidebar collapsed width – always reserves this much space in layout
+const SIDEBAR_MIN = 60;
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
@@ -32,161 +36,110 @@ export default function App() {
   const [cardTemplates, setCardTemplates] = useState({});
   const [templateConfig, setTemplateConfig] = useState(getTemplateConfig());
   const [user, setUser] = useState(null);
-  // authLoading = true while Firebase resolves auth state (handles redirect login restore)
   const [authLoading, setAuthLoading] = useState(true);
-
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
 
   useEffect(() => {
-    // Listen for Firebase Auth state changes (remembers logged-in admin user across page reloads)
-    const unsubAuth = subscribeToAuth((u) => {
-      setUser(u);
-      setAuthLoading(false);
-    });
-
+    const unsubAuth = subscribeToAuth((u) => { setUser(u); setAuthLoading(false); });
     const handleHashChange = () => setCurrentRoute(window.location.hash || '#/');
     window.addEventListener('hashchange', handleHashChange);
-
-    return () => {
-      unsubAuth();
-      window.removeEventListener('hashchange', handleHashChange);
-    };
+    return () => { unsubAuth(); window.removeEventListener('hashchange', handleHashChange); };
   }, []);
 
-  // DO NOT load Realtime Database until user logs in as Authorized Admin!
   useEffect(() => {
     const isAdmin = user && !user.isAnonymous && user.email;
-    
-    if (!isAdmin) {
-      setMembers([]);
-      setBatches([]);
-      return;
-    }
-
-    // Subscribe to database listeners ONLY when admin is logged in
-    const unsubMembers = subscribeMembers((list) => setMembers(list));
-    const unsubBatches = subscribeBatches((list) => setBatches(list));
-    const unsubConfig = subscribeTemplateConfig((cfg) => setTemplateConfig(cfg));
-    const unsubCardTemplates = subscribeCardTemplates((templates) => setCardTemplates(templates));
-
-    return () => {
-      unsubMembers && unsubMembers();
-      unsubBatches && unsubBatches();
-      unsubConfig && unsubConfig();
-      unsubCardTemplates && unsubCardTemplates();
-    };
+    if (!isAdmin) { setMembers([]); setBatches([]); return; }
+    const unsubMembers        = subscribeMembers((list)      => setMembers(list));
+    const unsubBatches        = subscribeBatches((list)      => setBatches(list));
+    const unsubConfig         = subscribeTemplateConfig((c)  => setTemplateConfig(c));
+    const unsubCardTemplates  = subscribeCardTemplates((t)   => setCardTemplates(t));
+    return () => { unsubMembers?.(); unsubBatches?.(); unsubConfig?.(); unsubCardTemplates?.(); };
   }, [user]);
 
-  const handleAddMember = async (newMember) => { await updateMember(newMember); };
-  const handleImportBatch = async (newMembers, newBatch) => {
-    await saveMembers([...members, ...newMembers]);
-    await saveBatches([newBatch, ...batches]);
-  };
-  const handleUpdateMember = async (updatedMember) => { await updateMember(updatedMember); };
+  const handleAddMember    = async (m)  => { await updateMember(m); };
+  const handleImportBatch  = async (nm, nb) => { await saveMembers([...members, ...nm]); await saveBatches([nb, ...batches]); };
+  const handleUpdateMember = async (m)  => { await updateMember(m); };
   const handleDeleteMember = async (id) => { await deleteMember(id); };
 
-  // Public hash routes (no admin auth required)
-  if (currentRoute.startsWith('#/verify')) return <PublicVerifyPortal />;
+  // Public routes – render without admin chrome
+  if (currentRoute.startsWith('#/verify'))      return <PublicVerifyPortal />;
   if (currentRoute.startsWith('#/public-edit')) return <PublicEditPortal />;
 
-  const isAdminAuthenticated = user && !user.isAnonymous && user.email;
+  const isAdminAuthenticated = !!(user && !user.isAnonymous && user.email);
 
-  // While Firebase is resolving auth state (especially after Google redirect),
-  // show a spinner instead of the login gate to prevent the false login loop
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: '50%',
-            border: '3px solid #e2e8f0',
-            borderTopColor: '#1d4ed8',
-            animation: 'spin 0.7s linear infinite'
-          }} />
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #e2e8f0', borderTopColor: '#1d4ed8', animation: 'spin 0.7s linear infinite', margin: '0 auto 14px' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <div>
-            <p style={{ fontWeight: 700, color: '#1e293b', margin: '0 0 4px', fontSize: '14px' }}>E-CELL CARD-GEN</p>
-            <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Verifying authentication...</p>
-          </div>
+          <p style={{ fontWeight: 700, color: '#1e293b', margin: '0 0 4px', fontSize: '14px' }}>E-CELL CARD GENERATION PANEL</p>
+          <p style={{ color: '#64748b', margin: 0, fontSize: '12px' }}>Verifying authentication...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+    /*
+      Layout strategy:
+      ─────────────────────────────────────────────────────────────────
+      TopHeader:  position:fixed, top:0, full width, h=56px
+      Sidebar:    position:fixed, top:56px, uses translateX (no reflow)
+      Spacer div: width=60px (collapsed width), always in flow – pushes
+                  main content 60px to the right. Sidebar then slides 
+                  over this area when expanded. Zero layout animation.
+      Main:       marginLeft=0, padding fills the rest naturally.
+      ─────────────────────────────────────────────────────────────────
+    */
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#f1f5f9' }}>
+      {/* Fixed top header */}
+      <TopHeader
         user={isAdminAuthenticated ? user : null}
-        onOpenAddModal={() => setShowAddModal(true)}
-        onOpenBulkModal={() => setShowBulkModal(true)}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
       />
 
-      <main 
-        style={{ 
-          flex: 1, 
-          maxWidth: '1280px', 
-          margin: '0 auto', 
-          width: '100%', 
-          padding: '32px 20px', 
-          paddingLeft: isCollapsed ? '92px' : '280px',
-          transition: 'padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-          boxSizing: 'border-box' 
-        }}
-      >
-        {activeTab === 'verify' && <PublicVerifyPortal />}
-        {activeTab === 'edit-portal' && <PublicEditPortal />}
+      {/* Body area (below fixed header) */}
+      <div style={{ display: 'flex', flex: 1, paddingTop: '56px' }}>
 
-        {!isAdminAuthenticated && activeTab !== 'verify' && activeTab !== 'edit-portal' ? (
-          <AdminLoginGate />
-        ) : (
-          <>
-            {activeTab === 'members' && (
-              <AdminMembers
-                members={members}
-                batches={batches}
-                onAddMember={handleAddMember}
-                onImportBatch={handleImportBatch}
-                onUpdateMember={handleUpdateMember}
-                onDeleteMember={handleDeleteMember}
-              />
-            )}
-            {activeTab === 'template-studio' && <AdminTemplateStudio members={members} />}
-            {activeTab === 'batches' && <AdminBatchEdits batches={batches} members={members} />}
-            {activeTab === 'export' && <AdminExport members={members} batches={batches} />}
-          </>
-        )}
-      </main>
+        {/* Sidebar (handles its own fixed positioning + transform internally) */}
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
+          onOpenAddModal={() => setShowAddModal(true)}
+          onOpenBulkModal={() => setShowBulkModal(true)}
+        />
 
-      <footer 
-        style={{ 
-          background: '#ffffff', 
-          borderTop: '1px solid #e2e8f0', 
-          padding: '20px', 
-          paddingLeft: isCollapsed ? '92px' : '280px',
-          transition: 'padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-          marginTop: 'auto' 
-        }}
-      >
-        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '12px', color: '#64748b' }}>
-          <div>
-            <span style={{ fontWeight: 700, color: '#334155' }}>E-CELL CARD-GEN</span> • Firebase Realtime Database
-          </div>
-          <div>
-            Status:{' '}
-            <span style={{ fontWeight: 700, color: isAdminAuthenticated ? '#16a34a' : '#dc2626' }}>
-              {isAdminAuthenticated ? `Admin: ${user.email}` : 'Login Required'}
-            </span>
-          </div>
-        </div>
-      </footer>
+        {/* Main content – marginLeft is ALWAYS SIDEBAR_MIN (60px), never animates */}
+        <main style={{
+          flex: 1,
+          minWidth: 0,
+          padding: '28px 24px',
+          boxSizing: 'border-box',
+          overflowX: 'hidden',
+        }}>
+          {activeTab === 'verify'      && <PublicVerifyPortal />}
+          {activeTab === 'edit-portal' && <PublicEditPortal />}
 
-      {showAddModal && <AddMemberModal onClose={() => setShowAddModal(false)} onAddMember={handleAddMember} />}
-      {showBulkModal && <BulkCsvModal onClose={() => setShowBulkModal(false)} onImportSuccess={handleImportBatch} />}
+          {!isAdminAuthenticated && activeTab !== 'verify' && activeTab !== 'edit-portal' ? (
+            <AdminLoginGate />
+          ) : (
+            <>
+              {activeTab === 'members'         && <AdminMembers members={members} batches={batches} onAddMember={handleAddMember} onImportBatch={handleImportBatch} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} />}
+              {activeTab === 'template-studio' && <AdminTemplateStudio members={members} />}
+              {activeTab === 'batches'         && <AdminBatchEdits batches={batches} members={members} />}
+              {activeTab === 'export'          && <AdminExport members={members} batches={batches} />}
+            </>
+          )}
+        </main>
+      </div>
+
+      {showAddModal  && <AddMemberModal onClose={() => setShowAddModal(false)}  onAddMember={handleAddMember} />}
+      {showBulkModal && <BulkCsvModal  onClose={() => setShowBulkModal(false)} onImportSuccess={handleImportBatch} />}
     </div>
   );
 }
