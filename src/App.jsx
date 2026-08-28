@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar, { SIDEBAR_OPEN, SIDEBAR_MINI } from './components/Sidebar';
+import Sidebar, { SIDEBAR_W } from './components/Sidebar';
 import TopHeader from './components/TopHeader';
 import AdminMembers from './components/AdminMembers';
 import AdminBatchEdits from './components/AdminBatchEdits';
@@ -20,7 +20,6 @@ import { subscribeToAuth } from './utils/firebase';
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
   const [activeTab, setActiveTab] = useState('members');
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const [members, setMembers] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -41,17 +40,17 @@ export default function App() {
   useEffect(() => {
     const isAdmin = user && !user.isAnonymous && user.email;
     if (!isAdmin) { setMembers([]); setBatches([]); return; }
-    const u1 = subscribeMembers((l)      => setMembers(l));
-    const u2 = subscribeBatches((l)      => setBatches(l));
+    const u1 = subscribeMembers((l)       => setMembers(l));
+    const u2 = subscribeBatches((l)       => setBatches(l));
     const u3 = subscribeTemplateConfig((c) => setTemplateConfig(c));
     const u4 = subscribeCardTemplates((t)  => setCardTemplates(t));
     return () => { u1?.(); u2?.(); u3?.(); u4?.(); };
   }, [user]);
 
-  const handleAddMember    = async (m)     => { await updateMember(m); };
+  const handleAddMember    = async (m)      => { await updateMember(m); };
   const handleImportBatch  = async (nm, nb) => { await saveMembers([...members, ...nm]); await saveBatches([nb, ...batches]); };
-  const handleUpdateMember = async (m)     => { await updateMember(m); };
-  const handleDeleteMember = async (id)    => { await deleteMember(id); };
+  const handleUpdateMember = async (m)      => { await updateMember(m); };
+  const handleDeleteMember = async (id)     => { await deleteMember(id); };
 
   if (currentRoute.startsWith('#/verify'))      return <PublicVerifyPortal />;
   if (currentRoute.startsWith('#/public-edit')) return <PublicEditPortal />;
@@ -71,34 +70,24 @@ export default function App() {
     );
   }
 
-  /* How many px the sidebar currently occupies */
-  const sidebarW = isCollapsed ? SIDEBAR_MINI : SIDEBAR_OPEN;
-
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
 
-      {/* ── Fixed top header ── */}
-      <TopHeader
-        user={isAdminAuthenticated ? user : null}
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
-      />
+      {/* Fixed top header */}
+      <TopHeader user={isAdminAuthenticated ? user : null} />
 
-      {/* ── Fixed sidebar ── */}
+      {/* Fixed sidebar */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
         onOpenAddModal={() => setShowAddModal(true)}
         onOpenBulkModal={() => setShowBulkModal(true)}
       />
 
-      {/* ── Main + footer: left margin tracks sidebar width ── */}
+      {/* Content area — permanent left margin matching sidebar width */}
       <div style={{
-        marginLeft: `${sidebarW}px`,
-        marginTop: '56px',                /* below fixed header */
-        transition: 'margin-left 0.2s ease',
+        marginLeft: `${SIDEBAR_W}px`,
+        marginTop: '56px',
         minHeight: 'calc(100vh - 56px)',
         display: 'flex',
         flexDirection: 'column',
