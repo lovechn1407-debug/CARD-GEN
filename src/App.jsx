@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
+import Sidebar, { SIDEBAR_OPEN, SIDEBAR_MINI } from './components/Sidebar';
 import TopHeader from './components/TopHeader';
 import AdminMembers from './components/AdminMembers';
 import AdminBatchEdits from './components/AdminBatchEdits';
@@ -11,20 +11,11 @@ import PublicEditPortal from './components/PublicEditPortal';
 import AddMemberModal from './components/AddMemberModal';
 import BulkCsvModal from './components/BulkCsvModal';
 import {
-  subscribeMembers,
-  subscribeBatches,
-  subscribeTemplateConfig,
-  subscribeCardTemplates,
-  saveMembers,
-  saveBatches,
-  updateMember,
-  deleteMember,
-  getTemplateConfig
+  subscribeMembers, subscribeBatches, subscribeTemplateConfig,
+  subscribeCardTemplates, saveMembers, saveBatches,
+  updateMember, deleteMember, getTemplateConfig
 } from './utils/storage';
 import { subscribeToAuth } from './utils/firebase';
-
-// Sidebar collapsed width – always reserves this much space in layout
-const SIDEBAR_MIN = 60;
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
@@ -50,19 +41,18 @@ export default function App() {
   useEffect(() => {
     const isAdmin = user && !user.isAnonymous && user.email;
     if (!isAdmin) { setMembers([]); setBatches([]); return; }
-    const unsubMembers        = subscribeMembers((list)      => setMembers(list));
-    const unsubBatches        = subscribeBatches((list)      => setBatches(list));
-    const unsubConfig         = subscribeTemplateConfig((c)  => setTemplateConfig(c));
-    const unsubCardTemplates  = subscribeCardTemplates((t)   => setCardTemplates(t));
-    return () => { unsubMembers?.(); unsubBatches?.(); unsubConfig?.(); unsubCardTemplates?.(); };
+    const u1 = subscribeMembers((l)      => setMembers(l));
+    const u2 = subscribeBatches((l)      => setBatches(l));
+    const u3 = subscribeTemplateConfig((c) => setTemplateConfig(c));
+    const u4 = subscribeCardTemplates((t)  => setCardTemplates(t));
+    return () => { u1?.(); u2?.(); u3?.(); u4?.(); };
   }, [user]);
 
-  const handleAddMember    = async (m)  => { await updateMember(m); };
+  const handleAddMember    = async (m)     => { await updateMember(m); };
   const handleImportBatch  = async (nm, nb) => { await saveMembers([...members, ...nm]); await saveBatches([nb, ...batches]); };
-  const handleUpdateMember = async (m)  => { await updateMember(m); };
-  const handleDeleteMember = async (id) => { await deleteMember(id); };
+  const handleUpdateMember = async (m)     => { await updateMember(m); };
+  const handleDeleteMember = async (id)    => { await deleteMember(id); };
 
-  // Public routes – render without admin chrome
   if (currentRoute.startsWith('#/verify'))      return <PublicVerifyPortal />;
   if (currentRoute.startsWith('#/public-edit')) return <PublicEditPortal />;
 
@@ -81,47 +71,39 @@ export default function App() {
     );
   }
 
+  /* How many px the sidebar currently occupies */
+  const sidebarW = isCollapsed ? SIDEBAR_MINI : SIDEBAR_OPEN;
+
   return (
-    /*
-      Layout strategy:
-      ─────────────────────────────────────────────────────────────────
-      TopHeader:  position:fixed, top:0, full width, h=56px
-      Sidebar:    position:fixed, top:56px, uses translateX (no reflow)
-      Spacer div: width=60px (collapsed width), always in flow – pushes
-                  main content 60px to the right. Sidebar then slides 
-                  over this area when expanded. Zero layout animation.
-      Main:       marginLeft=0, padding fills the rest naturally.
-      ─────────────────────────────────────────────────────────────────
-    */
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#f1f5f9' }}>
-      {/* Fixed top header */}
+    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+
+      {/* ── Fixed top header ── */}
       <TopHeader
         user={isAdminAuthenticated ? user : null}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
       />
 
-      {/* Body area (below fixed header) */}
-      <div style={{ display: 'flex', flex: 1, paddingTop: '56px' }}>
+      {/* ── Fixed sidebar ── */}
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
+        onOpenAddModal={() => setShowAddModal(true)}
+        onOpenBulkModal={() => setShowBulkModal(true)}
+      />
 
-        {/* Sidebar (handles its own fixed positioning + transform internally) */}
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isCollapsed={isCollapsed}
-          setIsCollapsed={setIsCollapsed}
-          onOpenAddModal={() => setShowAddModal(true)}
-          onOpenBulkModal={() => setShowBulkModal(true)}
-        />
-
-        {/* Main content – marginLeft is ALWAYS SIDEBAR_MIN (60px), never animates */}
-        <main style={{
-          flex: 1,
-          minWidth: 0,
-          padding: '28px 24px',
-          boxSizing: 'border-box',
-          overflowX: 'hidden',
-        }}>
+      {/* ── Main + footer: left margin tracks sidebar width ── */}
+      <div style={{
+        marginLeft: `${sidebarW}px`,
+        marginTop: '56px',                /* below fixed header */
+        transition: 'margin-left 0.2s ease',
+        minHeight: 'calc(100vh - 56px)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <main style={{ flex: 1, padding: '28px 24px', boxSizing: 'border-box' }}>
           {activeTab === 'verify'      && <PublicVerifyPortal />}
           {activeTab === 'edit-portal' && <PublicEditPortal />}
 
@@ -136,6 +118,18 @@ export default function App() {
             </>
           )}
         </main>
+
+        <footer style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '14px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', flexWrap: 'wrap', gap: '6px' }}>
+            <span><strong style={{ color: '#334155' }}>CARD GENERATION PANEL</strong> · I.T.S Engineering College</span>
+            <span>
+              Status:{' '}
+              <strong style={{ color: isAdminAuthenticated ? '#16a34a' : '#dc2626' }}>
+                {isAdminAuthenticated ? `Admin: ${user.email}` : 'Login Required'}
+              </strong>
+            </span>
+          </div>
+        </footer>
       </div>
 
       {showAddModal  && <AddMemberModal onClose={() => setShowAddModal(false)}  onAddMember={handleAddMember} />}

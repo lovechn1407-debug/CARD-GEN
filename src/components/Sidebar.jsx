@@ -1,225 +1,205 @@
 import React from 'react';
 import {
-  Users,
-  Sliders,
-  Clock,
-  Printer,
-  ShieldCheck,
-  UserCheck,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  FileSpreadsheet
+  Users, Sliders, Clock, Printer,
+  ShieldCheck, UserCheck, Plus, FileSpreadsheet,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 
-const SIDEBAR_OPEN_W = 224;
-const SIDEBAR_COLLAPSED_W = 60;
+export const SIDEBAR_OPEN  = 240;
+export const SIDEBAR_MINI  = 64;
 
 const tabs = [
-  { id: 'members',          label: 'All Members',    icon: Users       },
-  { id: 'template-studio',  label: 'Card Design',    icon: Sliders     },
-  { id: 'batches',          label: 'Batch Edits',    icon: Clock       },
-  { id: 'export',           label: 'Print & Export', icon: Printer     },
-  { id: 'verify',           label: 'Verify Portal',  icon: ShieldCheck },
-  { id: 'edit-portal',      label: 'Self-Edit',      icon: UserCheck   },
+  { id: 'members',         label: 'All Members',    icon: Users       },
+  { id: 'template-studio', label: 'Card Design',    icon: Sliders     },
+  { id: 'batches',         label: 'Batch Edits',    icon: Clock       },
+  { id: 'export',         label: 'Print & Export', icon: Printer     },
+  { id: 'verify',         label: 'Verify Portal',  icon: ShieldCheck },
+  { id: 'edit-portal',    label: 'Self-Edit',      icon: UserCheck   },
 ];
 
-export { SIDEBAR_OPEN_W, SIDEBAR_COLLAPSED_W };
+export default function Sidebar({
+  activeTab, setActiveTab,
+  isCollapsed, setIsCollapsed,
+  onOpenAddModal, onOpenBulkModal
+}) {
+  const W = isCollapsed ? SIDEBAR_MINI : SIDEBAR_OPEN;
 
-export default function Sidebar({ activeTab, setActiveTab, isCollapsed, setIsCollapsed, onOpenAddModal, onOpenBulkModal }) {
   return (
-    <>
-      {/* ── SIDEBAR PANEL ── fixed, GPU-animated via transform only ── */}
-      <aside
-        style={{
-          position: 'fixed',
-          top: '56px',              /* below the top header */
-          left: 0,
-          bottom: 0,
-          width: `${SIDEBAR_OPEN_W}px`,
-          background: '#0f172a',
-          display: 'flex',
-          flexDirection: 'column',
-          zIndex: 30,
-          overflowX: 'hidden',
-          overflowY: 'auto',
-          /* GPU-accelerated – does NOT trigger layout reflow */
-          transform: isCollapsed
-            ? `translateX(-${SIDEBAR_OPEN_W - SIDEBAR_COLLAPSED_W}px)`
-            : 'translateX(0)',
-          transition: 'transform 0.22s ease',
-          willChange: 'transform',
-        }}
-      >
-        {/* ── Toggle button pinned to right edge ── */}
+    <aside style={{
+      position: 'fixed',
+      top: '56px',
+      left: 0,
+      bottom: 0,
+      /* Animate WIDTH so content actually shifts — no translateX overlap */
+      width: `${W}px`,
+      transition: 'width 0.2s ease',
+      overflowX: 'hidden',
+      overflowY: 'auto',
+      background: '#ffffff',
+      borderRight: '1px solid #e2e8f0',
+      display: 'flex',
+      flexDirection: 'column',
+      zIndex: 30,
+      boxShadow: '2px 0 12px rgba(15,23,42,0.05)',
+    }}>
+
+      {/* ── Collapse / Expand toggle ── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: isCollapsed ? 'center' : 'flex-end',
+        padding: isCollapsed ? '12px 0' : '12px 10px',
+        borderBottom: '1px solid #f1f5f9',
+        flexShrink: 0,
+      }}>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          title={isCollapsed ? 'Expand menu' : 'Collapse menu'}
+          title={isCollapsed ? 'Expand' : 'Collapse'}
           style={{
-            position: 'absolute',
-            top: '12px',
-            right: '8px',
-            width: 28,
-            height: 28,
+            width: 32, height: 32,
             borderRadius: '8px',
-            border: 'none',
-            background: 'rgba(255,255,255,0.08)',
-            color: '#94a3b8',
+            border: '1px solid #e2e8f0',
+            background: '#f8fafc',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            color: '#64748b',
             flexShrink: 0,
-            zIndex: 2,
           }}
         >
           {isCollapsed
             ? <ChevronRight style={{ width: 15, height: 15 }} />
             : <ChevronLeft  style={{ width: 15, height: 15 }} />}
         </button>
+      </div>
 
-        {/* ── NAVIGATION ── */}
-        <nav style={{ flex: 1, padding: '52px 8px 8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {/* Section label */}
-          {!isCollapsed && (
-            <span style={{
-              fontSize: '9px',
-              fontWeight: 700,
-              color: '#475569',
-              textTransform: 'uppercase',
-              letterSpacing: '0.8px',
-              padding: '0 8px 8px',
-            }}>
-              Menu
-            </span>
-          )}
+      {/* ── Nav items ── */}
+      <nav style={{ flex: 1, padding: '8px 8px 0', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        {!isCollapsed && (
+          <span style={{
+            fontSize: '9px', fontWeight: 700, color: '#94a3b8',
+            textTransform: 'uppercase', letterSpacing: '0.8px',
+            padding: '8px 8px 4px',
+            whiteSpace: 'nowrap',
+          }}>Navigation</span>
+        )}
 
-          {tabs.map(({ id, label, icon: Icon }) => {
-            const active = activeTab === id;
-            return (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                title={isCollapsed ? label : undefined}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  width: '100%',
-                  padding: '9px 10px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: active ? 'rgba(59,130,246,0.18)' : 'transparent',
-                  color: active ? '#60a5fa' : '#94a3b8',
-                  fontSize: '13px',
-                  fontWeight: active ? 700 : 500,
-                  textAlign: 'left',
-                  whiteSpace: 'nowrap',
-                  position: 'relative',
-                  transition: 'background 0.12s, color 0.12s',
-                }}
-                onMouseEnter={e => {
-                  if (!active) {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                    e.currentTarget.style.color = '#cbd5e1';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!active) {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = '#94a3b8';
-                  }
-                }}
-              >
-                {/* Active left accent */}
-                {active && (
-                  <span style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: '18%',
-                    bottom: '18%',
-                    width: 3,
-                    borderRadius: '0 3px 3px 0',
-                    background: '#3b82f6',
-                  }} />
-                )}
-                <Icon style={{ width: 17, height: 17, flexShrink: 0 }} />
-                <span style={{ overflow: 'hidden', opacity: isCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}>
-                  {label}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const active = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              title={isCollapsed ? label : undefined}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
+                gap: '10px',
+                width: '100%',
+                /* Fixed padding so icons are always centered at SIDEBAR_MINI */
+                padding: isCollapsed ? '10px 0' : '10px 12px',
+                borderRadius: '10px',
+                border: 'none',
+                cursor: 'pointer',
+                background: active ? '#eff6ff' : 'transparent',
+                color: active ? '#1d4ed8' : '#475569',
+                fontSize: '13px',
+                fontWeight: active ? 700 : 500,
+                position: 'relative',
+                whiteSpace: 'nowrap',
+                boxSizing: 'border-box',
+              }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+            >
+              {active && (
+                <span style={{
+                  position: 'absolute', left: 0,
+                  top: '20%', bottom: '20%',
+                  width: 3, borderRadius: '0 3px 3px 0',
+                  background: '#1d4ed8',
+                }} />
+              )}
+              <Icon style={{
+                width: 18, height: 18,
+                color: active ? '#1d4ed8' : '#64748b',
+                flexShrink: 0,
+              }} />
+              {!isCollapsed && <span>{label}</span>}
+            </button>
+          );
+        })}
+      </nav>
 
-        {/* ── QUICK ACTIONS ── */}
-        <div style={{ padding: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          {!isCollapsed && (
-            <span style={{
-              display: 'block',
-              fontSize: '9px',
-              fontWeight: 700,
-              color: '#475569',
-              textTransform: 'uppercase',
-              letterSpacing: '0.8px',
-              padding: '0 4px 8px',
-            }}>
-              Quick Actions
-            </span>
-          )}
-          <button
-            onClick={onOpenAddModal}
-            title={isCollapsed ? 'Add Member' : undefined}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isCollapsed ? 'center' : 'flex-start',
-              gap: '8px',
-              width: '100%',
-              padding: '8px 10px',
-              marginBottom: '6px',
-              borderRadius: '10px',
-              border: 'none',
-              cursor: 'pointer',
-              background: '#1d4ed8',
-              color: '#fff',
-              fontSize: '12px',
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <Plus style={{ width: 15, height: 15, flexShrink: 0 }} />
-            <span style={{ opacity: isCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}>Add Member</span>
-          </button>
-          <button
-            onClick={onOpenBulkModal}
-            title={isCollapsed ? 'Bulk CSV' : undefined}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isCollapsed ? 'center' : 'flex-start',
-              gap: '8px',
-              width: '100%',
-              padding: '8px 10px',
-              borderRadius: '10px',
-              border: '1px solid rgba(255,255,255,0.08)',
-              cursor: 'pointer',
-              background: 'rgba(255,255,255,0.04)',
-              color: '#94a3b8',
-              fontSize: '12px',
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <FileSpreadsheet style={{ width: 15, height: 15, color: '#22c55e', flexShrink: 0 }} />
-            <span style={{ opacity: isCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}>Bulk CSV</span>
-          </button>
-        </div>
-      </aside>
+      {/* ── Quick actions ── */}
+      <div style={{
+        padding: '8px',
+        borderTop: '1px solid #f1f5f9',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        flexShrink: 0,
+      }}>
+        {!isCollapsed && (
+          <span style={{
+            fontSize: '9px', fontWeight: 700, color: '#94a3b8',
+            textTransform: 'uppercase', letterSpacing: '0.8px',
+            padding: '4px 4px 2px', whiteSpace: 'nowrap',
+          }}>Quick Actions</span>
+        )}
 
-      {/* ── INVISIBLE SPACER – reserves layout space, never animates ── */}
-      <div style={{ width: `${SIDEBAR_COLLAPSED_W}px`, flexShrink: 0 }} />
-    </>
+        <button
+          onClick={onOpenAddModal}
+          title={isCollapsed ? 'Add Member' : undefined}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: isCollapsed ? 'center' : 'flex-start',
+            gap: '8px',
+            width: '100%',
+            padding: isCollapsed ? '9px 0' : '9px 12px',
+            borderRadius: '10px',
+            border: 'none',
+            cursor: 'pointer',
+            background: '#1d4ed8',
+            color: '#fff',
+            fontSize: '12px',
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+            boxSizing: 'border-box',
+          }}
+        >
+          <Plus style={{ width: 15, height: 15, flexShrink: 0 }} />
+          {!isCollapsed && <span>Add Member</span>}
+        </button>
+
+        <button
+          onClick={onOpenBulkModal}
+          title={isCollapsed ? 'Bulk CSV' : undefined}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: isCollapsed ? 'center' : 'flex-start',
+            gap: '8px',
+            width: '100%',
+            padding: isCollapsed ? '9px 0' : '9px 12px',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            cursor: 'pointer',
+            background: '#f8fafc',
+            color: '#374151',
+            fontSize: '12px',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            boxSizing: 'border-box',
+          }}
+        >
+          <FileSpreadsheet style={{ width: 15, height: 15, color: '#16a34a', flexShrink: 0 }} />
+          {!isCollapsed && <span>Bulk CSV</span>}
+        </button>
+      </div>
+    </aside>
   );
 }
