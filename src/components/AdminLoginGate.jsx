@@ -22,7 +22,7 @@ export default function AdminLoginGate() {
     setIsSigningIn(true);
     setErrorMsg('');
     try {
-      await loginWithEmailPassword(email, password, currentAllowedEmail);
+      await loginWithEmailPassword(email, password);
       // onAuthStateChanged in App.jsx detects authentication state
     } catch (err) {
       setErrorMsg(err.message || 'Authentication failed. Check your Firebase Auth credentials.');

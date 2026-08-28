@@ -55,8 +55,7 @@ export default function App() {
 
   // DO NOT load Realtime Database until user logs in as Authorized Admin!
   useEffect(() => {
-    const cfg = getTemplateConfig();
-    const isAdmin = user && !user.isAnonymous && isEmailAuthorized(user.email, cfg.allowedAdminEmail);
+    const isAdmin = user && !user.isAnonymous && user.email;
     
     if (!isAdmin) {
       setMembers([]);
@@ -90,8 +89,7 @@ export default function App() {
   if (currentRoute.startsWith('#/verify')) return <PublicVerifyPortal />;
   if (currentRoute.startsWith('#/public-edit')) return <PublicEditPortal />;
 
-  const cfg = getTemplateConfig();
-  const isAdminAuthenticated = user && !user.isAnonymous && isEmailAuthorized(user.email, cfg.allowedAdminEmail);
+  const isAdminAuthenticated = user && !user.isAnonymous && user.email;
 
   // While Firebase is resolving auth state (especially after Google redirect),
   // show a spinner instead of the login gate to prevent the false login loop

@@ -23,22 +23,13 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const rtdb = getDatabase(app);
 
-// Hardcoded Allowed Admin Emails
-export const AUTHORIZED_ADMIN_EMAILS = [
-  "lovechn1407@gmail.com",
-  "lovechauhan1407@gmail.com",
-  "love.chauhan@ecell.in"
-];
-
-export function isEmailAuthorized(email, customAllowedEmail) {
-  if (!email) return false;
-  const lower = email.toLowerCase().trim();
-  if (customAllowedEmail && lower === customAllowedEmail.toLowerCase().trim()) return true;
-  return AUTHORIZED_ADMIN_EMAILS.some((e) => lower === e.toLowerCase().trim());
+// Approved Admin check: Any email added/authenticated in Firebase Auth console is authorized
+export function isEmailAuthorized(email) {
+  return !!email;
 }
 
 // Sign in with Email & Password (added in Firebase Auth console)
-export async function loginWithEmailPassword(email, password, customAllowedEmail) {
+export async function loginWithEmailPassword(email, password) {
   if (!email || !password) {
     throw new Error("Please enter both Admin Email and Password.");
   }
@@ -52,16 +43,10 @@ export async function loginWithEmailPassword(email, password, customAllowedEmail
       throw new Error("Invalid user authentication record.");
     }
 
-    const authorized = isEmailAuthorized(user.email, customAllowedEmail);
-    if (!authorized) {
-      await signOut(auth);
-      throw new Error(`Access Denied: "${user.email}" is NOT an authorized Admin email.`);
-    }
-
     return user;
   } catch (err) {
-    if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-      throw new Error("Invalid Email or Password. Please check credentials added in Firebase Auth console.");
+    if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
+      throw new Error("Invalid Email or Password. Please ensure this user is created in Firebase Auth Users console.");
     }
     if (err.code === 'auth/too-many-requests') {
       throw new Error("Too many failed login attempts. Please try again later.");
